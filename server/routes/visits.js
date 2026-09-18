@@ -22,6 +22,7 @@ function buildWhere(q) {
   return { sql: where.length ? 'WHERE ' + where.join(' AND ') : '', params };
 }
 
+/* ⚠️ 导出必须在 /:id 之前 */
 router.get('/export/csv', (req, res) => {
   const { sql, params } = buildWhere(req.query);
   const rows = db.prepare(`SELECT * FROM visits ${sql} ORDER BY entered_at DESC`).all(...params);
