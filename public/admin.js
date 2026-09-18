@@ -29,7 +29,7 @@ async function api(path, opt = {}) {
   return r.json();
 }
 
-/* ============ 卡片：点击筛选（再点取消） ============ */
+/* ================= 统计卡片 ================= */
 async function loadStats() {
   const s = await api('/api/stats');
   $('#cVisits').textContent = s.visits;
@@ -38,59 +38,43 @@ async function loadStats() {
   $('#cDesktop').textContent = s.desktop;
   $('#cUnknown').textContent = s.unknown;
   $('#cAvg').textContent = fmtDuration(s.avg_duration);
-
-  // 给每张卡片绑定 data-filter
-  const cards = [
-    ['#cVisits',  'cardVisits'],
-    ['#cAndroid', 'cardAndroid'],
-    ['#cIos',     'cardIos'],
-    ['#cDesktop', 'cardDesktop'],
-    ['#cUnknown', 'cardUnknown'],
-    ['#cAvg',     'cardAvg'],
-  ];
-  // 只有设备卡片可点（访问量/平均停留点不了）
-  const devMap = { cardAndroid:'android', cardIos:'ios', cardDesktop:'desktop', cardUnknown:'unknown' };
-  Object.entries(devMap).forEach(([cardId, dev]) => {
-    const el = document.getElementById(cardId)?.closest('.card');
-    if (!el) return;
-    el.classList.add('clickable');
-    el.dataset.device = dev;
-    el.onclick = () => toggleDevice(dev);
+  highlightCards();
+}
+function highlightCards() {
+  document.querySelectorAll('.card[data-device]').forEach(c => {
+    c.classList.toggle('active', c.dataset.device === state.filter.device);
   });
-  // 高亮当前选中卡片
-  document.querySelectorAll('.card').forEach(c => c.classList.remove('active'));
-  if (state.filter.device !== 'all') {
-    document.querySelector(`.card[data-device="${state.filter.device}"]`)?.classList.add('active');
-  }
 }
 
-function toggleDevice(dev) {
-  state.filter.device = (state.filter.device === dev) ? 'all' : dev;
-  state.page = 1;
-  syncFilterUI();
-  refresh();
-}
+/* ================= 卡片点击切换设备筛选 ================= */
+document.querySelectorAll('.card[data-device]').forEach(card => {
+  card.onclick = () => {
+    const dev = card.dataset.device;
+    state.filter.device = (state.filter.device === dev) ? 'all' : dev;
+    state.page = 1;
+    syncUI();
+    refresh();
+  };
+});
 
-/* ============ 筛选栏与 state 双向同步 ============ */
-function syncFilterUI() {
+/* ================= 状态与 UI 双向同步 ================= */
+function syncUI() {
   $('#fDate').value   = state.filter.date;
   $('#fDevice').value = state.filter.device;
   $('#fLevel').value  = state.filter.level;
   $('#fKw').value     = state.filter.q;
-  document.querySelectorAll('.card').forEach(c => c.classList.remove('active'));
-  if (state.filter.device !== 'all') {
-    document.querySelector(`.card[data-device="${state.filter.device}"]`)?.classList.add('active');
-  }
+  highlightCards();
 }
 
+/* ================= 列表 ================= */
 function buildQuery() {
   return new URLSearchParams({
-    date: state.filter.date,
+    date:   state.filter.date,
     device: state.filter.device,
-    level: state.filter.level,
-    q: state.filter.q,
-    page: state.page,
-    size: state.size,
+    level:  state.filter.level,
+    q:      state.filter.q,
+    page:   state.page,
+    size:   state.size,
   }).toString();
 }
 
@@ -99,7 +83,6 @@ function flag(cc) {
   return String.fromCodePoint(...cc.toUpperCase().split('').map(c => 127397 + c.charCodeAt(0)));
 }
 
-/* ============ 列表 ============ */
 async function loadList() {
   const data = await api('/api/visits?' + buildQuery());
   $('#totalHint').textContent = `共 ${data.total} 条（当前筛选）`;
@@ -152,19 +135,14 @@ function renderPager(total) {
   });
 }
 
-/* ============ 列表内点击：IP / 指纹 / 明细 / 删除 ============ */
+/* ================= 列表内点击：IP / 指纹 / 明细 / 删除 ================= */
 $('#list').addEventListener('click', async (e) => {
-  // 点 IP
   const ipEl = e.target.closest('[data-ip]');
-  if (ipEl && ipEl.dataset.ip) {
-    setSearch(ipEl.dataset.ip); return;
-  }
-  // 点指纹
+  if (ipEl && ipEl.dataset.ip) { setSearch(ipEl.dataset.ip); return; }
+
   const fpEl = e.target.closest('[data-fp]');
-  if (fpEl && fpEl.dataset.fp) {
-    setSearch(fpEl.dataset.fp); return;
-  }
-  // 其他操作
+  if (fpEl && fpEl.dataset.fp) { setSearch(fpEl.dataset.fp); return; }
+
   const item = e.target.closest('.item'); if (!item) return;
   const id = item.dataset.id;
   const act = e.target.dataset.act;
@@ -182,37 +160,31 @@ $('#list').addEventListener('click', async (e) => {
 function setSearch(kw) {
   state.filter.q = kw;
   state.page = 1;
-  syncFilterUI();
+  syncUI();
   refresh();
 }
 
-/* ============ 筛选栏事件 ============ */
+/* ================= 筛选栏事件 ================= */
 $('#fDate').onchange   = () => { state.filter.date   = $('#fDate').value;   state.page = 1; refresh(); };
 $('#fDevice').onchange = () => { state.filter.device = $('#fDevice').value; state.page = 1; refresh(); };
 $('#fLevel').onchange  = () => { state.filter.level  = $('#fLevel').value;  state.page = 1; refresh(); };
-
 $('#btnSearch').onclick = () => { state.filter.q = $('#fKw').value.trim(); state.page = 1; refresh(); };
 $('#fKw').addEventListener('keydown', e => { if (e.key === 'Enter') $('#btnSearch').click(); });
-
 $('#btnReset').onclick = () => {
   state.filter = { date:'today', device:'all', level:'all', q:'' };
   state.page = 1;
-  syncFilterUI();
+  syncUI();
   refresh();
 };
 
-/* ============ 导出（带当前筛选） ============ */
+/* ================= 导出 / 批量删除 ================= */
 $('#btnExport').onclick = () => {
   const q = new URLSearchParams({
-    date: state.filter.date,
-    device: state.filter.device,
-    level: state.filter.level,
-    q: state.filter.q,
+    date: state.filter.date, device: state.filter.device,
+    level: state.filter.level, q: state.filter.q,
   });
   location.href = '/api/visits/export/csv?' + q.toString();
 };
-
-/* ============ 批量删除 ============ */
 $('#btnBatchDel').onclick = async () => {
   const ids = [...document.querySelectorAll('.ck:checked')].map(x => +x.value);
   if (!ids.length) return toast('请先勾选');
@@ -221,14 +193,14 @@ $('#btnBatchDel').onclick = async () => {
   toast('已删除'); refresh();
 };
 
-/* ============ 顶部按钮 ============ */
+/* ================= 顶部按钮 ================= */
 $('#btnRefresh').onclick = () => { refresh(); toast('已刷新'); };
 $('#btnLogout').onclick = async () => {
   await api('/api/logout', { method: 'POST' });
   location.href = '/admin/login';
 };
 
-/* ============ 设置弹窗 ============ */
+/* ================= 设置弹窗 ================= */
 $('#btnSettings').onclick = async () => {
   const s = await api('/api/settings');
   $('#hbInterval').value = s.heartbeat_interval;
@@ -265,9 +237,7 @@ $('#btnSaveRt').onclick = async () => {
   toast(r.error || '已保存');
 };
 
-/* ============ 统一刷新 ============ */
+/* ================= 统一刷新 + 启动 ================= */
 function refresh() { loadStats(); loadList(); }
-
-/* ============ 启动 ============ */
-syncFilterUI();
+syncUI();
 refresh();
