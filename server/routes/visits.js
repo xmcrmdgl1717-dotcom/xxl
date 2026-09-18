@@ -17,16 +17,26 @@ function buildWhere(q) {
     if (level === '3+') where.push('level_reached >= 3');
     else { where.push('level_reached = ?'); params.push(parseInt(level, 10)); }
   }
-  // ⭐ 搜索支持：IP / 指纹 / 国家代码 / 国家中文名
+
+  // ⭐ 搜索支持：IP / 指纹 / 国家代码 / 国家名 / 系统 / 浏览器 / 语言 / 设备
   if (kw) {
-    where.push('(ip LIKE ? OR fingerprint LIKE ? OR country LIKE ? OR country_name LIKE ?)');
-    params.push(`%${kw}%`, `%${kw}%`, `%${kw}%`, `%${kw}%`);
+    where.push(`(
+      ip LIKE ? OR
+      fingerprint LIKE ? OR
+      country LIKE ? OR
+      country_name LIKE ? OR
+      os LIKE ? OR
+      browser LIKE ? OR
+      lang LIKE ? OR
+      device_type LIKE ?
+    )`);
+    const like = `%${kw}%`;
+    params.push(like, like, like, like, like, like, like, like);
   }
 
   return { sql: where.length ? 'WHERE ' + where.join(' AND ') : '', params };
 }
 
-/* ⚠️ 导出必须在 /:id 之前 */
 router.get('/export/csv', (req, res) => {
   const { sql, params } = buildWhere(req.query);
   const rows = db.prepare(`SELECT * FROM visits ${sql} ORDER BY entered_at DESC`).all(...params);
