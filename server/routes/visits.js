@@ -17,7 +17,11 @@ function buildWhere(q) {
     if (level === '3+') where.push('level_reached >= 3');
     else { where.push('level_reached = ?'); params.push(parseInt(level, 10)); }
   }
-  if (kw) { where.push('(ip LIKE ? OR fingerprint LIKE ?)'); params.push(`%${kw}%`, `%${kw}%`); }
+  // ⭐ 搜索支持：IP / 指纹 / 国家代码 / 国家中文名
+  if (kw) {
+    where.push('(ip LIKE ? OR fingerprint LIKE ? OR country LIKE ? OR country_name LIKE ?)');
+    params.push(`%${kw}%`, `%${kw}%`, `%${kw}%`, `%${kw}%`);
+  }
 
   return { sql: where.length ? 'WHERE ' + where.join(' AND ') : '', params };
 }
