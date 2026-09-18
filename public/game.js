@@ -65,7 +65,6 @@
     Object.entries(vars).reduce((s, [k, v]) => s.replaceAll(`{${k}}`, v),
       (LANG[currentLang]?.[key] || LANG.en[key] || key));
 
-  /* applyLang：允许外部（埋点脚本 / 语言选择器）动态切语言，无需刷新 */
   function applyLang(code) {
     const c = String(code || 'en').toLowerCase();
     currentLang = pickLang(c);
@@ -84,16 +83,14 @@
     document.getElementById('copyForSafari').textContent  = gateText[2];
     document.getElementById('continueHere').textContent   = gateText[3];
 
-    // 动态内容也刷新
     const lvEl = document.getElementById('level');
-    if (lvEl) lvEl.textContent = (LANG[currentLang]?.level || LANG.en.level).replace('{n}', S.level);
+    if (lvEl && typeof S !== 'undefined' && S) lvEl.textContent = (LANG[currentLang]?.level || LANG.en.level).replace('{n}', S.level);
     const btn = document.getElementById('modalBtn');
     if (btn && btn.dataset.i18n) btn.textContent = LANG[currentLang]?.[btn.dataset.i18n] || LANG.en[btn.dataset.i18n];
   }
   window.__DDX_applyLang = applyLang;
 
-  /* 首屏先跑一次 */
-  applyLang(rawLang);
+  /* ⚠️ 关键修复：首屏 applyLang 移到 S 定义之后执行，避免引用未初始化的 const S */
 
   /* ============ 状态 ============ */
   const S = {
@@ -105,6 +102,9 @@
   const $ = s => document.querySelector(s);
   const board = $('#board');
   const trayEl = $('#tray');
+
+  /* ⭐ S 已定义，现在可以安全执行首屏语言渲染 */
+  applyLang(rawLang);
 
   let _ac = null;
   function getAC() {
