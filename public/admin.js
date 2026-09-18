@@ -95,7 +95,7 @@ async function loadList() {
     <div class="item" data-id="${r.id}">
       <div class="r1">
         <input type="checkbox" class="ck" value="${r.id}">
-        <span class="fp clickable" data-fp="${r.fingerprint || ''}" title="点击筛选该指纹">${r.fingerprint || '无指纹'}</span>
+        <span class="fp clickable" data-search="${r.fingerprint || ''}" title="点击筛选该指纹">${r.fingerprint || '无指纹'}</span>
         <span class="tag new">${r.levels_cleared > 0 ? '已通关 ' + r.levels_cleared + ' 关' : '未通关'}</span>
         <span class="spacer"></span>
         <button class="iconbtn" data-act="detail">📄 查看明细</button>
@@ -109,12 +109,12 @@ async function loadList() {
       </div>
       <div class="r3">
         <span>#${r.id}</span>
-        <span class="clickable" data-ip="${r.ip || ''}" title="点击筛选该 IP">🌐 ${r.ip || '未知'}</span>
-        <span class="clickable" data-country="${r.country_name || ''}" title="点击筛选该国家">${flag(r.country)} ${r.country_name || '未知'}</span>
-        <span>📱 ${deviceLabel[r.device_type] || '未知'}</span>
-        <span>🖥 ${r.os || '未知'}</span>
-        <span>🧭 ${r.browser || '未知'}</span>
-        <span>🗣 ${r.lang || '未知'}</span>
+        <span class="clickable" data-search="${r.ip || ''}" title="点击筛选该 IP">🌐 ${r.ip || '未知'}</span>
+        <span class="clickable" data-search="${r.country_name || ''}" title="点击筛选该国家">${flag(r.country)} ${r.country_name || '未知'}</span>
+        <span class="clickable" data-device-pick="${r.device_type || ''}" title="点击筛选该设备">📱 ${deviceLabel[r.device_type] || '未知'}</span>
+        <span class="clickable" data-search="${r.os || ''}" title="点击筛选该系统">🖥 ${r.os || '未知'}</span>
+        <span class="clickable" data-search="${r.browser || ''}" title="点击筛选该浏览器">🧭 ${r.browser || '未知'}</span>
+        <span class="clickable" data-search="${r.lang || ''}" title="点击筛选该语言">🗣 ${r.lang || '未知'}</span>
       </div>
     </div>
   `).join('');
@@ -135,21 +135,22 @@ function renderPager(total) {
   });
 }
 
-/* ================= 列表内点击：IP / 指纹 / 国家 / 明细 / 删除 ================= */
+/* ================= 列表内点击 ================= */
 $('#list').addEventListener('click', async (e) => {
-  // 点 IP
-  const ipEl = e.target.closest('[data-ip]');
-  if (ipEl && ipEl.dataset.ip) { setSearch(ipEl.dataset.ip); return; }
+  // 通用搜索字段
+  const sEl = e.target.closest('[data-search]');
+  if (sEl && sEl.dataset.search) { setSearch(sEl.dataset.search); return; }
 
-  // 点指纹
-  const fpEl = e.target.closest('[data-fp]');
-  if (fpEl && fpEl.dataset.fp) { setSearch(fpEl.dataset.fp); return; }
+  // 设备：同步到下拉
+  const dEl = e.target.closest('[data-device-pick]');
+  if (dEl && dEl.dataset.devicePick) {
+    state.filter.device = dEl.dataset.devicePick;
+    state.page = 1;
+    syncUI();
+    refresh();
+    return;
+  }
 
-  // 点国家
-  const cEl = e.target.closest('[data-country]');
-  if (cEl && cEl.dataset.country) { setSearch(cEl.dataset.country); return; }
-
-  // 其他操作
   const item = e.target.closest('.item'); if (!item) return;
   const id = item.dataset.id;
   const act = e.target.dataset.act;
