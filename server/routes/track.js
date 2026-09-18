@@ -11,20 +11,56 @@ function clientIp(req) {
 
 function parseUA(ua = '') {
   let device_type = 'unknown', os = '未知', browser = '未知';
-  if (/iPhone|iPod/i.test(ua))      { device_type = 'ios'; os = 'iOS'; }
-  else if (/iPad/i.test(ua))        { device_type = 'ios'; os = 'iPadOS'; }
-  else if (/Android/i.test(ua))     { device_type = 'android'; os = 'Android ' + (/Android ([\d.]+)/.exec(ua)?.[1] || ''); }
-  else if (/Windows NT/i.test(ua))  { device_type = 'desktop'; const v = /Windows NT ([\d.]+)/.exec(ua)[1];
-                                      os = v === '10.0' ? 'Windows 10/11' : 'Windows ' + v; }
-  else if (/Mac OS X/i.test(ua))    { device_type = 'desktop'; os = 'macOS ' + (/Mac OS X ([\d_.]+)/.exec(ua)?.[1]?.replace(/_/g,'.') || ''); }
-  else if (/Linux/i.test(ua))       { device_type = 'desktop'; os = 'Linux'; }
 
+  // iPhone / iPad 提取系统版本号
+  if (/iPhone|iPod/i.test(ua)) {
+    device_type = 'ios';
+    const m = /CPU iPhone OS ([\d_]+)/.exec(ua);
+    os = m ? 'iOS ' + m[1].replace(/_/g, '.') : 'iOS';
+  }
+  else if (/iPad/i.test(ua)) {
+    device_type = 'ios';
+    const m = /CPU OS ([\d_]+)/.exec(ua);
+    os = m ? 'iPadOS ' + m[1].replace(/_/g, '.') : 'iPadOS';
+  }
+  // Android
+  else if (/Android/i.test(ua)) {
+    device_type = 'android';
+    const m = /Android ([\d.]+)/.exec(ua);
+    os = m ? 'Android ' + m[1] : 'Android';
+  }
+  // Windows
+  else if (/Windows NT/i.test(ua)) {
+    device_type = 'desktop';
+    const v = /Windows NT ([\d.]+)/.exec(ua)?.[1];
+    os = v === '10.0' ? 'Windows 10/11' : 'Windows ' + (v || '');
+  }
+  // macOS
+  else if (/Mac OS X/i.test(ua)) {
+    device_type = 'desktop';
+    const m = /Mac OS X ([\d_.]+)/.exec(ua);
+    os = m ? 'macOS ' + m[1].replace(/_/g, '.') : 'macOS';
+  }
+  // Linux
+  else if (/Linux/i.test(ua)) {
+    device_type = 'desktop';
+    os = 'Linux';
+  }
+
+  // 浏览器 + 主版本号
   const b = [
-    [/Edg\/([\d.]+)/, 'Edge'], [/OPR\/([\d.]+)/, 'Opera'],
-    [/Chrome\/([\d.]+)/, 'Chrome'], [/Firefox\/([\d.]+)/, 'Firefox'],
-    [/Version\/([\d.]+).*Safari/, 'Safari'], [/Safari\/([\d.]+)/, 'Safari'],
+    [/Edg\/([\d.]+)/, 'Edge'],
+    [/OPR\/([\d.]+)/, 'Opera'],
+    [/Chrome\/([\d.]+)/, 'Chrome'],
+    [/Firefox\/([\d.]+)/, 'Firefox'],
+    [/Version\/([\d.]+).*Safari/, 'Safari'],
+    [/Safari\/([\d.]+)/, 'Safari'],
   ];
-  for (const [re, name] of b) { const m = re.exec(ua); if (m) { browser = name + ' ' + m[1].split('.')[0]; break; } }
+  for (const [re, name] of b) {
+    const m = re.exec(ua);
+    if (m) { browser = name + ' ' + m[1].split('.')[0]; break; }
+  }
+
   return { device_type, os: os.trim(), browser };
 }
 
