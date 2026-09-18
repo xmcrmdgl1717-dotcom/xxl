@@ -17,12 +17,12 @@
   </header>
 
   <section class="cards" id="cards">
-    <div class="card"><div class="k">👣 访问量</div><div class="v" id="cVisits">-</div></div>
-    <div class="card"><div class="k">📱 安卓</div><div class="v" id="cAndroid">-</div></div>
-    <div class="card"><div class="k">🍎 苹果</div><div class="v" id="cIos">-</div></div>
-    <div class="card"><div class="k">🖥 桌面</div><div class="v" id="cDesktop">-</div></div>
-    <div class="card"><div class="k">❓ 未知设备</div><div class="v" id="cUnknown">-</div></div>
-    <div class="card"><div class="k">⏱ 平均停留</div><div class="v" id="cAvg">-</div></div>
+    <div class="card" id="cardVisits"><div class="k">👣 访问量</div><div class="v" id="cVisits">-</div></div>
+    <div class="card" id="cardAndroid" data-device="android"><div class="k">📱 安卓</div><div class="v" id="cAndroid">-</div></div>
+    <div class="card" id="cardIos" data-device="ios"><div class="k">🍎 苹果</div><div class="v" id="cIos">-</div></div>
+    <div class="card" id="cardDesktop" data-device="desktop"><div class="k">🖥 桌面</div><div class="v" id="cDesktop">-</div></div>
+    <div class="card" id="cardUnknown" data-device="unknown"><div class="k">❓ 未知设备</div><div class="v" id="cUnknown">-</div></div>
+    <div class="card" id="cardAvg"><div class="k">⏱ 平均停留</div><div class="v" id="cAvg">-</div></div>
   </section>
 
   <section class="filters">
@@ -32,7 +32,6 @@
         <option value="today" selected>今天</option>
         <option value="7d">近 7 天</option>
         <option value="30d">近 30 天</option>
-        <option value="custom">自定义</option>
       </select>
     </label>
     <label>设备
@@ -68,7 +67,6 @@
   </section>
 
   <section class="list" id="list"></section>
-
   <section class="pager" id="pager"></section>
 </div>
 
