@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>后台登录</title>
+<style>
+  body{margin:0;min-height:100vh;display:grid;place-items:center;background:#0e1420;color:#e6edf6;
+       font-family:-apple-system,"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif}
+  .box{width:min(360px,92vw);background:#141b2b;border:1px solid #1f2b40;border-radius:14px;padding:28px}
+  h1{margin:0 0 6px;font-size:20px}
+  p{margin:0 0 20px;color:#7c8aa0;font-size:13px}
+  input{width:100%;box-sizing:border-box;background:#0e1420;border:1px solid #26334a;color:#e6edf6;
+        padding:12px 14px;border-radius:10px;font-size:15px;outline:none}
+  input:focus{border-color:#2f6df6}
+  button{width:100%;margin-top:14px;padding:12px;border:0;border-radius:10px;background:#2f6df6;
+         color:#fff;font-size:15px;font-weight:600;cursor:pointer}
+  button:active{transform:translateY(1px)}
+  .err{margin-top:12px;color:#ff6b6b;font-size:13px;min-height:18px}
+</style>
+</head>
+<body>
+<form class="box" id="f">
+  <h1>🛠 后台登录</h1>
+  <p>请输入管理员密码</p>
+  <input type="password" id="pw" placeholder="密码" autocomplete="current-password" autofocus>
+  <button type="submit">登录</button>
+  <div class="err" id="err"></div>
+</form>
+<script>
+document.getElementById('f').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const err = document.getElementById('err'); err.textContent = '';
+  const password = document.getElementById('pw').value;
+  try {
+    const r = await fetch('/api/login', {
+      method: 'POST', headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({ password })
+    });
+    const j = await r.json();
+    if (!r.ok) { err.textContent = j.error || '登录失败'; return; }
+    location.href = j.needChange ? '/admin?first=1' : '/admin';
+  } catch (e) { err.textContent = '网络错误'; }
+});
+</script>
+</body>
+</html>

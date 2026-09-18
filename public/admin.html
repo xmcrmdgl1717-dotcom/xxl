@@ -1,0 +1,110 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>🎮 游戏访问记录 · 后台</title>
+<link rel="stylesheet" href="/admin.css">
+</head>
+<body>
+<div class="wrap">
+  <header class="topbar">
+    <div class="title"><span class="ico">📋</span> 游戏访问记录</div>
+    <div class="actions">
+      <button class="btn ghost" id="btnRefresh">🔄 刷新</button>
+      <button class="btn ghost" id="btnLogout">🚪 退出</button>
+    </div>
+  </header>
+
+  <section class="cards" id="cards">
+    <div class="card"><div class="k">👣 访问量</div><div class="v" id="cVisits">-</div></div>
+    <div class="card"><div class="k">📱 安卓</div><div class="v" id="cAndroid">-</div></div>
+    <div class="card"><div class="k">🍎 苹果</div><div class="v" id="cIos">-</div></div>
+    <div class="card"><div class="k">🖥 桌面</div><div class="v" id="cDesktop">-</div></div>
+    <div class="card"><div class="k">❓ 未知设备</div><div class="v" id="cUnknown">-</div></div>
+    <div class="card"><div class="k">⏱ 平均停留</div><div class="v" id="cAvg">-</div></div>
+  </section>
+
+  <section class="filters">
+    <label>时间
+      <select id="fDate">
+        <option value="all">全部</option>
+        <option value="today" selected>今天</option>
+        <option value="7d">近 7 天</option>
+        <option value="30d">近 30 天</option>
+        <option value="custom">自定义</option>
+      </select>
+    </label>
+    <label>设备
+      <select id="fDevice">
+        <option value="all">全部</option>
+        <option value="android">安卓</option>
+        <option value="ios">苹果</option>
+        <option value="desktop">桌面</option>
+        <option value="unknown">未知</option>
+      </select>
+    </label>
+    <label>关卡
+      <select id="fLevel">
+        <option value="all">全部</option>
+        <option value="1">第 1 关</option>
+        <option value="2">第 2 关</option>
+        <option value="3">第 3 关</option>
+        <option value="3+">3 关以上</option>
+      </select>
+    </label>
+    <label class="grow">搜索
+      <input id="fKw" placeholder="IP / 浏览器指纹">
+    </label>
+    <button class="btn primary" id="btnSearch">🔍 搜索</button>
+    <button class="btn ghost" id="btnReset">重置</button>
+  </section>
+
+  <section class="toolbar">
+    <button class="btn ghost" id="btnExport">📥 导出 CSV</button>
+    <button class="btn ghost danger" id="btnBatchDel">🗑 批量删除</button>
+    <button class="btn ghost" id="btnSettings">⚙ 设置</button>
+    <span class="count" id="totalHint">共 0 条</span>
+  </section>
+
+  <section class="list" id="list"></section>
+
+  <section class="pager" id="pager"></section>
+</div>
+
+<div class="modal hidden" id="mDetail"><div class="modal-box">
+  <div class="modal-head"><b>访问明细</b><button class="x" data-close>✕</button></div>
+  <pre class="detail" id="detailBody"></pre>
+</div></div>
+
+<div class="modal hidden" id="mSettings"><div class="modal-box">
+  <div class="modal-head"><b>⚙ 设置</b><button class="x" data-close>✕</button></div>
+  <div class="tabs">
+    <button class="tab active" data-tab="pw">密码</button>
+    <button class="tab" data-tab="hb">心跳</button>
+    <button class="tab" data-tab="rt">数据保留</button>
+  </div>
+  <div class="tab-body" data-panel="pw">
+    <label>旧密码<input type="password" id="oldPw"></label>
+    <label>新密码（≥8位）<input type="password" id="newPw"></label>
+    <label>确认新密码<input type="password" id="newPw2"></label>
+    <button class="btn primary" id="btnSavePw">保存密码</button>
+    <div class="hint">保存后需重新登录</div>
+  </div>
+  <div class="tab-body hidden" data-panel="hb">
+    <label>心跳间隔（秒，5~600）<input type="number" id="hbInterval" min="5" max="600"></label>
+    <label>超时判定（秒，60~86400）<input type="number" id="hbTimeout" min="60" max="86400"></label>
+    <button class="btn primary" id="btnSaveHb">保存心跳</button>
+    <div class="hint">新会话生效</div>
+  </div>
+  <div class="tab-body hidden" data-panel="rt">
+    <label>数据保留天数<input type="number" id="rtDays" min="1" max="3650"></label>
+    <button class="btn primary" id="btnSaveRt">保存</button>
+    <div class="hint">每天 03:30 自动清理超期数据</div>
+  </div>
+</div></div>
+
+<div class="toast" id="toast"></div>
+<script src="/admin.js"></script>
+</body>
+</html>
