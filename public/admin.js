@@ -1,5 +1,13 @@
 const $ = s => document.querySelector(s);
-const state = { page: 1, size: 20, filter: { date:'today', device:'all', level:'all', q:'' } };
+const state = {
+  page: 1,
+  size: 20,
+  filter: {
+    date: 'today', device: 'all', level: 'all',
+    country: 'all', os: 'all', browser: 'all', lang: 'all',
+    q: '',
+  },
+};
 
 function toast(msg) {
   const t = $('#toast'); t.textContent = msg; t.classList.add('show');
@@ -18,7 +26,6 @@ function fmtTime(s) {
   return `${d.getFullYear()}/${d.getMonth() + 1}/${d.getDate()} ${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
 }
 const deviceLabel = { android:'安卓', ios:'苹果', desktop:'桌面', unknown:'未知' };
-
 const LANG_LABEL = {
   en:'英语', zh:'简体中文', zht:'繁体中文', es:'西班牙语', ar:'阿拉伯语',
   pt:'葡萄牙语', id:'印尼语', fr:'法语', ja:'日语', ru:'俄语', de:'德语',
@@ -51,8 +58,6 @@ function highlightCards() {
     c.classList.toggle('active', c.dataset.device === state.filter.device);
   });
 }
-
-/* ================= 卡片点击切换设备筛选 ================= */
 document.querySelectorAll('.card[data-device]').forEach(card => {
   card.onclick = () => {
     const dev = card.dataset.device;
@@ -63,36 +68,60 @@ document.querySelectorAll('.card[data-device]').forEach(card => {
   };
 });
 
+/* ================= 动态下拉选项 ================= */
+async function loadOptions() {
+  const o = await api('/api/visits/options');
+  fillSelect('#fCountry', o.countries);
+  fillSelect('#fOs',      o.os);
+  fillSelect('#fBrowser', o.browsers);
+  fillSelect('#fLang',    o.langs);
+  // 保留当前选中值
+  syncUI();
+}
+function fillSelect(sel, arr) {
+  const el = $(sel);
+  const cur = el.value || 'all';
+  el.innerHTML = '<option value="all">全部</option>' +
+    (arr || []).map(v => `<option value="${escapeAttr(v)}">${escapeHtml(v)}</option>`).join('');
+  if ([...el.options].some(o => o.value === cur)) el.value = cur;
+}
+function escapeHtml(s) {
+  return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+function escapeAttr(s) { return escapeHtml(s); }
+
 /* ================= 状态与 UI 双向同步 ================= */
 function syncUI() {
-  $('#fDate').value   = state.filter.date;
-  $('#fDevice').value = state.filter.device;
-  $('#fLevel').value  = state.filter.level;
-  $('#fKw').value     = state.filter.q;
+  $('#fDate').value    = state.filter.date;
+  $('#fDevice').value  = state.filter.device;
+  $('#fLevel').value   = state.filter.level;
+  $('#fCountry').value = state.filter.country;
+  $('#fOs').value      = state.filter.os;
+  $('#fBrowser').value = state.filter.browser;
+  $('#fLang').value    = state.filter.lang;
+  $('#fKw').value      = state.filter.q;
   highlightCards();
 }
 
 /* ================= 列表 ================= */
 function buildQuery() {
   return new URLSearchParams({
-    date:   state.filter.date,
-    device: state.filter.device,
-    level:  state.filter.level,
-    q:      state.filter.q,
-    page:   state.page,
-    size:   state.size,
+    date:    state.filter.date,
+    device:  state.filter.device,
+    level:   state.filter.level,
+    country: state.filter.country,
+    os:      state.filter.os,
+    browser: state.filter.browser,
+    lang:    state.filter.lang,
+    q:       state.filter.q,
+    page:    state.page,
+    size:    state.size,
   }).toString();
 }
 
 function flag(cc) {
   if (!cc || cc.length !== 2) return '🏳';
   return String.fromCodePoint(...cc.toUpperCase().split('').map(c => 127397 + c.charCodeAt(0)));
-}
-
-function escapeHtml(s) {
-  return String(s).replace(/[&<>"']/g, c => ({
-    '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'
-  }[c]));
 }
 
 async function loadList() {
@@ -122,11 +151,11 @@ async function loadList() {
       <div class="r3">
         <span>#${r.id}</span>
         <span class="clickable" data-search="${r.ip || ''}" title="点击筛选该 IP">🌐 ${r.ip || '未知'}</span>
-        <span class="clickable" data-search="${r.country_name || ''}" title="点击筛选该国家">${flag(r.country)} ${r.country_name || '未知'}</span>
+        <span class="clickable" data-filter="country" data-value="${r.country_name || ''}" title="点击筛选该国家">${flag(r.country)} ${r.country_name || '未知'}</span>
         <span class="clickable" data-device-pick="${r.device_type || ''}" title="点击筛选该设备">📱 ${deviceLabel[r.device_type] || '未知'}</span>
-        <span class="clickable" data-search="${r.os || ''}" title="点击筛选该系统">🖥 ${r.os || '未知'}</span>
-        <span class="clickable" data-search="${r.browser || ''}" title="点击筛选该浏览器">🧭 ${r.browser || '未知'}</span>
-        <span class="clickable" data-search="${r.lang || ''}" title="点击筛选该语言">🗣 ${r.lang || '未知'}</span>
+        <span class="clickable" data-filter="os" data-value="${r.os || ''}" title="点击筛选该系统">🖥 ${r.os || '未知'}</span>
+        <span class="clickable" data-filter="browser" data-value="${r.browser || ''}" title="点击筛选该浏览器">🧭 ${r.browser || '未知'}</span>
+        <span class="clickable" data-filter="lang" data-value="${r.lang || ''}" title="点击筛选该语言">🗣 ${r.lang || '未知'}</span>
       </div>
     </div>
   `).join('');
@@ -173,20 +202,17 @@ function renderDetail(r) {
     ['User-Agent',     r.user_agent || '—'],
     ['创建时间',        fmtTime(r.created_at)],
   ];
-
-  const html = rows.map(([k, v]) => `
+  return '<div class="dgrid">' + rows.map(([k, v]) => `
     <div class="drow">
       <div class="dk">${k}</div>
       <div class="dv">${escapeHtml(v ?? '—')}</div>
     </div>
-  `).join('');
-
-  return `<div class="dgrid">${html}</div>`;
+  `).join('') + '</div>';
 }
 
 /* ================= 列表内点击 ================= */
 $('#list').addEventListener('click', async (e) => {
-  // 通用搜索字段
+  // 自由搜索字段（IP / 指纹）
   const sEl = e.target.closest('[data-search]');
   if (sEl && sEl.dataset.search) { setSearch(sEl.dataset.search); return; }
 
@@ -197,6 +223,20 @@ $('#list').addEventListener('click', async (e) => {
     state.page = 1;
     syncUI();
     refresh();
+    return;
+  }
+
+  // 其他字段：同步到对应下拉
+  const fEl = e.target.closest('[data-filter]');
+  if (fEl && fEl.dataset.filter) {
+    const key = fEl.dataset.filter;    // country / os / browser / lang
+    const val = fEl.dataset.value;
+    if (key in state.filter) {
+      state.filter[key] = val || 'all';
+      state.page = 1;
+      syncUI();
+      refresh();
+    }
     return;
   }
 
@@ -222,13 +262,22 @@ function setSearch(kw) {
 }
 
 /* ================= 筛选栏事件 ================= */
-$('#fDate').onchange   = () => { state.filter.date   = $('#fDate').value;   state.page = 1; refresh(); };
-$('#fDevice').onchange = () => { state.filter.device = $('#fDevice').value; state.page = 1; refresh(); };
-$('#fLevel').onchange  = () => { state.filter.level  = $('#fLevel').value;  state.page = 1; refresh(); };
+$('#fDate').onchange    = () => { state.filter.date    = $('#fDate').value;    state.page = 1; refresh(); };
+$('#fDevice').onchange  = () => { state.filter.device  = $('#fDevice').value;  state.page = 1; refresh(); };
+$('#fLevel').onchange   = () => { state.filter.level   = $('#fLevel').value;   state.page = 1; refresh(); };
+$('#fCountry').onchange = () => { state.filter.country = $('#fCountry').value; state.page = 1; refresh(); };
+$('#fOs').onchange      = () => { state.filter.os      = $('#fOs').value;      state.page = 1; refresh(); };
+$('#fBrowser').onchange = () => { state.filter.browser = $('#fBrowser').value; state.page = 1; refresh(); };
+$('#fLang').onchange    = () => { state.filter.lang    = $('#fLang').value;    state.page = 1; refresh(); };
+
 $('#btnSearch').onclick = () => { state.filter.q = $('#fKw').value.trim(); state.page = 1; refresh(); };
 $('#fKw').addEventListener('keydown', e => { if (e.key === 'Enter') $('#btnSearch').click(); });
+
 $('#btnReset').onclick = () => {
-  state.filter = { date:'today', device:'all', level:'all', q:'' };
+  state.filter = {
+    date: 'today', device: 'all', level: 'all',
+    country: 'all', os: 'all', browser: 'all', lang: 'all', q: '',
+  };
   state.page = 1;
   syncUI();
   refresh();
@@ -238,7 +287,9 @@ $('#btnReset').onclick = () => {
 $('#btnExport').onclick = () => {
   const q = new URLSearchParams({
     date: state.filter.date, device: state.filter.device,
-    level: state.filter.level, q: state.filter.q,
+    level: state.filter.level, country: state.filter.country,
+    os: state.filter.os, browser: state.filter.browser,
+    lang: state.filter.lang, q: state.filter.q,
   });
   location.href = '/api/visits/export/csv?' + q.toString();
 };
@@ -298,3 +349,4 @@ $('#btnSaveRt').onclick = async () => {
 function refresh() { loadStats(); loadList(); }
 syncUI();
 refresh();
+loadOptions();
