@@ -44,26 +44,56 @@
     id:['Lebih baik di Safari','Salin alamat, buka Safari, lalu tekan lama bilah alamat untuk menempel. Anda juga dapat membuka menu Bagikan iPhone.','Salin alamat','Salin & buka Bagikan']
   };
 
-  /* 语言：由 track.js 通过 window.__DDX_LANG 注入，未注入时用设备语言 */
-  const rawLang = (window.__DDX_LANG || navigator.languages?.[0] || navigator.language || 'en').toLowerCase();
-  const lang = rawLang === 'zht' ? 'zht'
-             : rawLang.startsWith('zh-tw') || rawLang.startsWith('zh-hk') || rawLang.startsWith('zh-mo') ? 'zht'
-             : rawLang.startsWith('zh') ? 'zh'
-             : (Object.keys(LANG).find(k => rawLang.startsWith(k)) || 'en');
+  /* 初始化语言：URL > localStorage > window.__DDX_LANG > 系统 */
+  const rawLang = (
+    new URLSearchParams(location.search).get('lang') ||
+    localStorage.getItem('ddx-lang') ||
+    window.__DDX_LANG ||
+    navigator.languages?.[0] || navigator.language || 'en'
+  ).toLowerCase();
+
+  function pickLang(c) {
+    return c === 'zht' ? 'zht'
+         : c.startsWith('zh-tw') || c.startsWith('zh-hk') || c.startsWith('zh-mo') || c.startsWith('zh-hant') ? 'zht'
+         : c.startsWith('zh') ? 'zh'
+         : (Object.keys(LANG).find(k => c.startsWith(k)) || 'en');
+  }
+
+  let currentLang = pickLang(rawLang);
+
   const tr = (key, vars = {}) =>
     Object.entries(vars).reduce((s, [k, v]) => s.replaceAll(`{${k}}`, v),
-      (LANG[lang]?.[key] || LANG.en[key] || key));
+      (LANG[currentLang]?.[key] || LANG.en[key] || key));
 
-  document.documentElement.lang = rawLang;
-  document.documentElement.dir = (lang === 'ar' || lang === 'ur') ? 'rtl' : 'ltr';
-  document.title = tr('name');
-  document.querySelectorAll('[data-i18n]').forEach(el => el.textContent = tr(el.dataset.i18n));
+  /* applyLang：允许外部（埋点脚本 / 语言选择器）动态切语言，无需刷新 */
+  function applyLang(code) {
+    const c = String(code || 'en').toLowerCase();
+    currentLang = pickLang(c);
+    window.__DDX_LANG = c;
+    document.documentElement.lang = c;
+    document.documentElement.dir = (currentLang === 'ar' || currentLang === 'ur') ? 'rtl' : 'ltr';
+    document.title = LANG[currentLang]?.name || LANG.en.name;
 
-  const gateText = GATE[lang] || GATE.en;
-  document.getElementById('browserTitle').textContent = gateText[0];
-  document.getElementById('browserText').textContent  = gateText[1];
-  document.getElementById('copyForSafari').textContent = gateText[2];
-  document.getElementById('continueHere').textContent   = gateText[3];
+    document.querySelectorAll('[data-i18n]').forEach(el => {
+      el.textContent = LANG[currentLang]?.[el.dataset.i18n] || LANG.en[el.dataset.i18n] || el.dataset.i18n;
+    });
+
+    const gateText = GATE[currentLang] || GATE.en;
+    document.getElementById('browserTitle').textContent   = gateText[0];
+    document.getElementById('browserText').textContent    = gateText[1];
+    document.getElementById('copyForSafari').textContent  = gateText[2];
+    document.getElementById('continueHere').textContent   = gateText[3];
+
+    // 动态内容也刷新
+    const lvEl = document.getElementById('level');
+    if (lvEl) lvEl.textContent = (LANG[currentLang]?.level || LANG.en.level).replace('{n}', S.level);
+    const btn = document.getElementById('modalBtn');
+    if (btn && btn.dataset.i18n) btn.textContent = LANG[currentLang]?.[btn.dataset.i18n] || LANG.en[btn.dataset.i18n];
+  }
+  window.__DDX_applyLang = applyLang;
+
+  /* 首屏先跑一次 */
+  applyLang(rawLang);
 
   /* ============ 状态 ============ */
   const S = {
@@ -76,7 +106,6 @@
   const board = $('#board');
   const trayEl = $('#tray');
 
-  /* 全局单例 AudioContext，避免并发上限 */
   let _ac = null;
   function getAC() {
     if (!_ac) _ac = new (window.AudioContext || window.webkitAudioContext)();
@@ -84,7 +113,6 @@
     return _ac;
   }
 
-  /* ============ 生成牌面 ============ */
   function seededTiles(level) {
     const groups = level === 1 ? 6 : level === 2 ? 12 : 20;
     const vals = [];
@@ -95,7 +123,6 @@
       const j = Math.floor(Math.random() * (i + 1));
       [vals[i], vals[j]] = [vals[j], vals[i]];
     }
-
     const t = [];
     let id = 0;
     const layers = level === 1
@@ -110,7 +137,6 @@
         t.push({ id: id++, icon: vals.pop(), z, x: L.ox + c * 66 + (r % 2) * 7, y: L.oy + r * 72, removed: false });
       }
     });
-
     if (level === 1) {
       const bottom = [...Array(3).fill(icons[0]), ...Array(3).fill(icons[1]), ...Array(3).fill(icons[2]), ...Array(3).fill(icons[3])].sort(() => Math.random() - .5);
       const top    = [...Array(3).fill(icons[0]), ...Array(3).fill(icons[1])].sort(() => Math.random() - .5);
@@ -126,7 +152,6 @@
     return S.tiles.some(o => !o.removed && o.z > t.z && Math.abs(o.x - t.x) < 54 && Math.abs(o.y - t.y) < 58);
   }
 
-  /* ============ 渲染 ============ */
   function render() {
     board.innerHTML = '';
     const w = board.clientWidth, h = board.clientHeight || 400;
@@ -139,7 +164,6 @@
       b.className = 'tile' + (isBlocked(t) ? ' blocked' : '');
       b.textContent = t.icon;
       b.setAttribute('aria-label', isBlocked(t) ? `${t.icon}，被遮挡` : `选择 ${t.icon}`);
-      /* [bug2 修复] 缩放走 CSS 变量 --s，不再用内联 transform */
       b.style.cssText = `left:${offset + t.x * scale}px;top:${top + t.y * scale}px;--s:${scale};z-index:${t.z}`;
       b.dataset.id = t.id;
       b.onclick = () => pick(t.id);
@@ -162,15 +186,11 @@
     $('#rescue').disabled  = S.used.rescue || !S.tray.length;
   }
 
-  /* ============ 点击 ============ */
   function pick(id) {
     if (!S.playing) return;
-    /* [bug4 修复] 槽满立即判定，避免快速连点溢出 */
     if (S.tray.length >= 7) return;
-
     const t = S.tiles.find(x => x.id === id);
     if (!t || t.removed || isBlocked(t)) return buzz(tr('blocked'));
-
     S.history.push({ id, tray: [...S.tray], combo: S.combo });
     t.removed = true;
     S.tray.push({ icon: t.icon, source: id });
@@ -182,17 +202,13 @@
     const counts = {};
     S.tray.forEach(x => counts[x.icon] = (counts[x.icon] || 0) + 1);
     const hit = Object.keys(counts).find(k => counts[k] >= 3);
-
     if (hit) {
       const removing = S.tray.filter(x => x.icon === hit).slice(0, 3);
       const removeIds = removing.map(x => x.source);
-
-      /* [bug3 修复] 先在 DOM 上加 .removing，动画结束后再真正移除 */
       removeIds.forEach(id => {
         const el = board.querySelector(`.tile[data-id="${id}"]`);
         if (el) el.classList.add('removing');
       });
-
       setTimeout(() => {
         const set = new Set(removeIds);
         S.tray = S.tray.filter(x => !set.has(x.source));
@@ -200,13 +216,11 @@
         tone(720);
         buzz(tr('match', { x: hit }));
         render();
-        /* [bug3 修复] render 之后再给 slot 加 pop，动画才能被看到 */
         document.querySelectorAll('.slot').forEach(x => x.classList.add('pop'));
         setTimeout(checkEnd, 220);
       }, 220);
       return;
     }
-
     S.combo = 0;
     render();
     setTimeout(checkEnd, 220);
@@ -232,8 +246,6 @@
       : tr('failText');
     $('#modalBtn').textContent = win ? tr('next') : tr('retry');
     $('#modal').classList.remove('hidden');
-
-    /* 上报关卡 */
     if (window.DDX_TRACK) {
       window.DDX_TRACK.onLevel(S.level, win ? S.level : S.level - 1, S.activeSeconds);
     }
@@ -295,7 +307,6 @@
     }
   }
 
-  /* ============ 事件绑定 ============ */
   const ua = navigator.userAgent;
   const isIPhone = /iPhone|iPod/i.test(ua);
   const isSafari = /Safari/i.test(ua) && !/(CriOS|FxiOS|EdgiOS|OPiOS|DuckDuckGo|GSA|MicroMessenger|FBAN|FBAV|Instagram|Line|TikTok)/i.test(ua);
@@ -307,16 +318,14 @@
     sessionStorage.setItem('browser-notice-dismissed', '1');
     $('#browserNotice').classList.add('hidden');
     if (navigator.share) navigator.share({ title: tr('name'), text: tr('shareText'), url: location.href }).catch(() => {});
-    else prompt(gateText[2], location.href);
   };
   $('#copyForSafari').onclick = async () => {
     try { await navigator.clipboard.writeText(location.href); buzz(tr('copied')); }
-    catch (e) { prompt(gateText[2], location.href); }
+    catch (e) {}
   };
 
   $('#share').onclick = shareGame;
   $('#modalShare').onclick = shareGame;
-
   $('#modalBtn').onclick = () => {
     if (S.nextLevel) start(S.level + 1);
     else { S.activeSeconds = 0; $('#timer').textContent = '00:00'; start(S.level); }
@@ -333,7 +342,6 @@
     $('#sound').textContent = S.sound ? '🔊' : '🔇';
     buzz(tr(S.sound ? 'soundOn' : 'soundOff'));
   };
-
   $('#undo').onclick = () => {
     if (S.used.undo || !S.history.length) return;
     const h = S.history.pop();
@@ -344,7 +352,6 @@
     buzz(tr('undone'));
     render();
   };
-
   $('#shuffle').onclick = () => {
     if (S.used.shuffle) return;
     const active = S.tiles.filter(t => !t.removed);
@@ -354,8 +361,6 @@
     buzz(tr('shuffled'));
     render();
   };
-
-  /* [bug1 修复] 移出：把牌退回牌面，不再 removed=true */
   $('#rescue').onclick = () => {
     if (S.used.rescue || !S.tray.length) return;
     const out = S.tray.splice(0, Math.min(3, S.tray.length));
@@ -363,7 +368,6 @@
       const t = S.tiles.find(t => t.id === x.source);
       if (t) t.removed = false;
     });
-    /* 同时清理 history 里对这几次操作的记录，避免撤回时状态错乱 */
     S.history = S.history.filter(h => !out.some(o => o.source === h.id));
     S.used.rescue = true;
     buzz(tr('moved', { n: out.length }));
@@ -374,11 +378,9 @@
   window.addEventListener('orientationchange', () => setTimeout(fit, 180));
   if ('ResizeObserver' in window) new ResizeObserver(fit).observe(board);
 
-  /* 暴露给埋点脚本读 */
   window.__DDX_getLevel = () => S.level;
   window.__DDX_getPlaySeconds = () => S.activeSeconds;
 
-  /* 初始化 */
   render();
 })();
 
@@ -423,11 +425,10 @@
   const device  = (navigator.languages?.[0] || navigator.language || 'en').toLowerCase();
 
   function deviceToCode(l) {
-    if (l.startsWith('zh-tw') || l.startsWith('zh-hk') || l.startsWith('zh-mo')) return 'zht';
+    if (l.startsWith('zh-tw') || l.startsWith('zh-hk') || l.startsWith('zh-mo') || l.startsWith('zh-hant')) return 'zht';
     if (l.startsWith('zh')) return 'zh';
     return LANGS.find(x => l.startsWith(x.code))?.code || 'en';
   }
-
   async function ipToCode() {
     try {
       const r = await fetch('/api/track/geo', { credentials: 'same-origin' });
@@ -436,7 +437,6 @@
     } catch (e) {}
     return null;
   }
-
   async function resolveLang() {
     if (urlLang && LANGS.some(x => x.code === urlLang)) return urlLang;
     if (saved) return saved;
@@ -483,10 +483,7 @@
   function getPlaySeconds() {
     try {
       if (typeof window.__DDX_getPlaySeconds === 'function') return window.__DDX_getPlaySeconds();
-      const el = document.getElementById('timer');
-      if (!el) return 0;
-      const m = String(el.textContent).match(/(\d+):(\d+)/);
-      return m ? (+m[1]) * 60 + (+m[2]) : 0;
+      return 0;
     } catch { return 0; }
   }
 
@@ -526,8 +523,9 @@
       hbInterval = j.heartbeat_interval || 30;
     } catch (e) {}
 
-    const lang = await resolveLang();
+    const lang = urlLang || saved || await resolveLang();
     window.__DDX_LANG = lang;
+    if (typeof window.__DDX_applyLang === 'function') window.__DDX_applyLang(lang);
 
     const fp = await fingerprint();
     post('/enter', { session_id: sessionId, fingerprint: fp, lang, referrer: document.referrer || '' });
@@ -550,7 +548,6 @@
     window.addEventListener('beforeunload', leave);
   })();
 
-  /* ============ 语言选择器 ============ */
   function openLangPicker() {
     const cur = window.__DDX_LANG || 'en';
     const ov = document.createElement('div');
@@ -566,7 +563,8 @@
       const code = b.dataset.code;
       localStorage.setItem('ddx-lang', code);
       window.DDX_TRACK.onLang(code);
-      location.reload();  // 语言生效需刷新
+      if (typeof window.__DDX_applyLang === 'function') window.__DDX_applyLang(code);
+      ov.remove();
     });
   }
   document.getElementById('langBtn').onclick = openLangPicker;
