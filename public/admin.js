@@ -110,7 +110,7 @@ async function loadList() {
       <div class="r3">
         <span>#${r.id}</span>
         <span class="clickable" data-ip="${r.ip || ''}" title="点击筛选该 IP">🌐 ${r.ip || '未知'}</span>
-        <span>${flag(r.country)} ${r.country_name || '未知'}</span>
+        <span class="clickable" data-country="${r.country_name || ''}" title="点击筛选该国家">${flag(r.country)} ${r.country_name || '未知'}</span>
         <span>📱 ${deviceLabel[r.device_type] || '未知'}</span>
         <span>🖥 ${r.os || '未知'}</span>
         <span>🧭 ${r.browser || '未知'}</span>
@@ -135,14 +135,21 @@ function renderPager(total) {
   });
 }
 
-/* ================= 列表内点击：IP / 指纹 / 明细 / 删除 ================= */
+/* ================= 列表内点击：IP / 指纹 / 国家 / 明细 / 删除 ================= */
 $('#list').addEventListener('click', async (e) => {
+  // 点 IP
   const ipEl = e.target.closest('[data-ip]');
   if (ipEl && ipEl.dataset.ip) { setSearch(ipEl.dataset.ip); return; }
 
+  // 点指纹
   const fpEl = e.target.closest('[data-fp]');
   if (fpEl && fpEl.dataset.fp) { setSearch(fpEl.dataset.fp); return; }
 
+  // 点国家
+  const cEl = e.target.closest('[data-country]');
+  if (cEl && cEl.dataset.country) { setSearch(cEl.dataset.country); return; }
+
+  // 其他操作
   const item = e.target.closest('.item'); if (!item) return;
   const id = item.dataset.id;
   const act = e.target.dataset.act;
