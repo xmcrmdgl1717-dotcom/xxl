@@ -1,5 +1,5 @@
 const $ = s => document.querySelector(s);
-const state = { page: 1, size: 20 };
+const state = { page: 1, size: 20, filter: { date:'today', device:'all', level:'all', q:'' } };
 
 function toast(msg) {
   const t = $('#toast'); t.textContent = msg; t.classList.add('show');
@@ -29,6 +29,7 @@ async function api(path, opt = {}) {
   return r.json();
 }
 
+/* ============ 卡片：点击筛选（再点取消） ============ */
 async function loadStats() {
   const s = await api('/api/stats');
   $('#cVisits').textContent = s.visits;
@@ -37,14 +38,57 @@ async function loadStats() {
   $('#cDesktop').textContent = s.desktop;
   $('#cUnknown').textContent = s.unknown;
   $('#cAvg').textContent = fmtDuration(s.avg_duration);
+
+  // 给每张卡片绑定 data-filter
+  const cards = [
+    ['#cVisits',  'cardVisits'],
+    ['#cAndroid', 'cardAndroid'],
+    ['#cIos',     'cardIos'],
+    ['#cDesktop', 'cardDesktop'],
+    ['#cUnknown', 'cardUnknown'],
+    ['#cAvg',     'cardAvg'],
+  ];
+  // 只有设备卡片可点（访问量/平均停留点不了）
+  const devMap = { cardAndroid:'android', cardIos:'ios', cardDesktop:'desktop', cardUnknown:'unknown' };
+  Object.entries(devMap).forEach(([cardId, dev]) => {
+    const el = document.getElementById(cardId)?.closest('.card');
+    if (!el) return;
+    el.classList.add('clickable');
+    el.dataset.device = dev;
+    el.onclick = () => toggleDevice(dev);
+  });
+  // 高亮当前选中卡片
+  document.querySelectorAll('.card').forEach(c => c.classList.remove('active'));
+  if (state.filter.device !== 'all') {
+    document.querySelector(`.card[data-device="${state.filter.device}"]`)?.classList.add('active');
+  }
+}
+
+function toggleDevice(dev) {
+  state.filter.device = (state.filter.device === dev) ? 'all' : dev;
+  state.page = 1;
+  syncFilterUI();
+  refresh();
+}
+
+/* ============ 筛选栏与 state 双向同步 ============ */
+function syncFilterUI() {
+  $('#fDate').value   = state.filter.date;
+  $('#fDevice').value = state.filter.device;
+  $('#fLevel').value  = state.filter.level;
+  $('#fKw').value     = state.filter.q;
+  document.querySelectorAll('.card').forEach(c => c.classList.remove('active'));
+  if (state.filter.device !== 'all') {
+    document.querySelector(`.card[data-device="${state.filter.device}"]`)?.classList.add('active');
+  }
 }
 
 function buildQuery() {
   return new URLSearchParams({
-    date: $('#fDate').value,
-    device: $('#fDevice').value,
-    level: $('#fLevel').value,
-    q: $('#fKw').value.trim(),
+    date: state.filter.date,
+    device: state.filter.device,
+    level: state.filter.level,
+    q: state.filter.q,
     page: state.page,
     size: state.size,
   }).toString();
@@ -55,6 +99,7 @@ function flag(cc) {
   return String.fromCodePoint(...cc.toUpperCase().split('').map(c => 127397 + c.charCodeAt(0)));
 }
 
+/* ============ 列表 ============ */
 async function loadList() {
   const data = await api('/api/visits?' + buildQuery());
   $('#totalHint').textContent = `共 ${data.total} 条（当前筛选）`;
@@ -67,7 +112,7 @@ async function loadList() {
     <div class="item" data-id="${r.id}">
       <div class="r1">
         <input type="checkbox" class="ck" value="${r.id}">
-        <span class="fp">${r.fingerprint || '无指纹'}</span>
+        <span class="fp clickable" data-fp="${r.fingerprint || ''}" title="点击筛选该指纹">${r.fingerprint || '无指纹'}</span>
         <span class="tag new">${r.levels_cleared > 0 ? '已通关 ' + r.levels_cleared + ' 关' : '未通关'}</span>
         <span class="spacer"></span>
         <button class="iconbtn" data-act="detail">📄 查看明细</button>
@@ -81,7 +126,7 @@ async function loadList() {
       </div>
       <div class="r3">
         <span>#${r.id}</span>
-        <span>🌐 ${r.ip || '未知'}</span>
+        <span class="clickable" data-ip="${r.ip || ''}" title="点击筛选该 IP">🌐 ${r.ip || '未知'}</span>
         <span>${flag(r.country)} ${r.country_name || '未知'}</span>
         <span>📱 ${deviceLabel[r.device_type] || '未知'}</span>
         <span>🖥 ${r.os || '未知'}</span>
@@ -107,7 +152,19 @@ function renderPager(total) {
   });
 }
 
+/* ============ 列表内点击：IP / 指纹 / 明细 / 删除 ============ */
 $('#list').addEventListener('click', async (e) => {
+  // 点 IP
+  const ipEl = e.target.closest('[data-ip]');
+  if (ipEl && ipEl.dataset.ip) {
+    setSearch(ipEl.dataset.ip); return;
+  }
+  // 点指纹
+  const fpEl = e.target.closest('[data-fp]');
+  if (fpEl && fpEl.dataset.fp) {
+    setSearch(fpEl.dataset.fp); return;
+  }
+  // 其他操作
   const item = e.target.closest('.item'); if (!item) return;
   const id = item.dataset.id;
   const act = e.target.dataset.act;
@@ -118,45 +175,65 @@ $('#list').addEventListener('click', async (e) => {
   } else if (act === 'del') {
     if (!confirm('确认删除这条记录？')) return;
     await api('/api/visits/' + id, { method: 'DELETE' });
-    toast('已删除'); loadList(); loadStats();
+    toast('已删除'); refresh();
   }
 });
 
-$('#btnSearch').onclick = () => { state.page = 1; loadList(); };
-$('#btnReset').onclick = () => {
-  $('#fDate').value = 'today'; $('#fDevice').value = 'all';
-  $('#fLevel').value = 'all'; $('#fKw').value = '';
-  state.page = 1; loadList();
-};
+function setSearch(kw) {
+  state.filter.q = kw;
+  state.page = 1;
+  syncFilterUI();
+  refresh();
+}
+
+/* ============ 筛选栏事件 ============ */
+$('#fDate').onchange   = () => { state.filter.date   = $('#fDate').value;   state.page = 1; refresh(); };
+$('#fDevice').onchange = () => { state.filter.device = $('#fDevice').value; state.page = 1; refresh(); };
+$('#fLevel').onchange  = () => { state.filter.level  = $('#fLevel').value;  state.page = 1; refresh(); };
+
+$('#btnSearch').onclick = () => { state.filter.q = $('#fKw').value.trim(); state.page = 1; refresh(); };
 $('#fKw').addEventListener('keydown', e => { if (e.key === 'Enter') $('#btnSearch').click(); });
 
+$('#btnReset').onclick = () => {
+  state.filter = { date:'today', device:'all', level:'all', q:'' };
+  state.page = 1;
+  syncFilterUI();
+  refresh();
+};
+
+/* ============ 导出（带当前筛选） ============ */
 $('#btnExport').onclick = () => {
   const q = new URLSearchParams({
-    date: $('#fDate').value, device: $('#fDevice').value,
-    level: $('#fLevel').value, q: $('#fKw').value.trim(),
+    date: state.filter.date,
+    device: state.filter.device,
+    level: state.filter.level,
+    q: state.filter.q,
   });
   location.href = '/api/visits/export/csv?' + q.toString();
 };
 
+/* ============ 批量删除 ============ */
 $('#btnBatchDel').onclick = async () => {
   const ids = [...document.querySelectorAll('.ck:checked')].map(x => +x.value);
   if (!ids.length) return toast('请先勾选');
   if (!confirm(`确认删除选中的 ${ids.length} 条？`)) return;
   await api('/api/visits/batch-delete', { method: 'POST', body: JSON.stringify({ ids }) });
-  toast('已删除'); loadList(); loadStats();
+  toast('已删除'); refresh();
 };
 
-$('#btnRefresh').onclick = () => { loadStats(); loadList(); toast('已刷新'); };
+/* ============ 顶部按钮 ============ */
+$('#btnRefresh').onclick = () => { refresh(); toast('已刷新'); };
 $('#btnLogout').onclick = async () => {
   await api('/api/logout', { method: 'POST' });
   location.href = '/admin/login';
 };
 
+/* ============ 设置弹窗 ============ */
 $('#btnSettings').onclick = async () => {
   const s = await api('/api/settings');
   $('#hbInterval').value = s.heartbeat_interval;
-  $('#hbTimeout').value = s.heartbeat_timeout;
-  $('#rtDays').value = s.data_retention_days;
+  $('#hbTimeout').value  = s.heartbeat_timeout;
+  $('#rtDays').value     = s.data_retention_days;
   $('#mSettings').classList.remove('hidden');
 };
 document.querySelectorAll('[data-close]').forEach(b =>
@@ -166,7 +243,6 @@ document.querySelectorAll('.tab').forEach(t => t.onclick = () => {
   document.querySelectorAll('.tab-body').forEach(p =>
     p.classList.toggle('hidden', p.dataset.panel !== t.dataset.tab));
 });
-
 $('#btnSavePw').onclick = async () => {
   const body = {
     old_password: $('#oldPw').value,
@@ -189,4 +265,9 @@ $('#btnSaveRt').onclick = async () => {
   toast(r.error || '已保存');
 };
 
-loadStats(); loadList();
+/* ============ 统一刷新 ============ */
+function refresh() { loadStats(); loadList(); }
+
+/* ============ 启动 ============ */
+syncFilterUI();
+refresh();
