@@ -1,7 +1,6 @@
 :root{
   --bg:#0e1420; --card:#141b2b; --line:#1f2b40; --line2:#26334a;
   --fg:#e6edf6; --muted:#7c8aa0; --blue:#2f6df6; --red:#ef4444;
-  --green:#22c55e; --amber:#f59e0b;
 }
 *{box-sizing:border-box}
 body{margin:0;background:var(--bg);color:var(--fg);
@@ -21,6 +20,12 @@ body{margin:0;background:var(--bg);color:var(--fg);
 .card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px 16px}
 .card .k{color:var(--muted);font-size:13px;margin-bottom:8px}
 .card .v{font-size:26px;font-weight:800;color:#9ecbff}
+
+/* 可点击卡片 */
+.card[data-device]{cursor:pointer;transition:.15s;user-select:none}
+.card[data-device]:hover{background:#1a2436;border-color:var(--blue)}
+.card.active{border-color:var(--blue);background:#16233a;box-shadow:0 0 0 2px #2f6df655}
+.card.active .v{color:#fff}
 
 .filters{display:flex;gap:10px;flex-wrap:wrap;align-items:end;
   background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px;margin-bottom:12px}
@@ -50,6 +55,10 @@ body{margin:0;background:var(--bg);color:var(--fg);
 .iconbtn:hover{background:#1a2436}
 .iconbtn.red{color:#fca5a5;border-color:#5b2020}
 input[type=checkbox]{accent-color:var(--blue);width:16px;height:16px}
+
+/* 可点击的 IP / 指纹 */
+.clickable{cursor:pointer;transition:.15s}
+.clickable:hover{color:#fff;text-decoration:underline;background:#16233a}
 
 .pager{display:flex;justify-content:center;gap:8px;margin:20px 0}
 .pager button{border:1px solid var(--line2);background:transparent;color:var(--fg);
@@ -83,13 +92,3 @@ input[type=checkbox]{accent-color:var(--blue);width:16px;height:16px}
   .cards{grid-template-columns:repeat(2,1fr)}
   .filters{flex-direction:column;align-items:stretch}
 }
-/* 可点击卡片 */
-.card.clickable{cursor:pointer;transition:.15s;user-select:none}
-.card.clickable:hover{background:#1a2436;border-color:#2f6df6}
-.card.active{border-color:#2f6df6;background:#16233a;box-shadow:0 0 0 2px #2f6df655}
-.card.active .v{color:#fff}
-
-/* 可点击的 IP / 指纹 */
-.clickable{cursor:pointer;transition:.15s}
-.clickable:hover{color:#fff;text-decoration:underline}
-.fp.clickable:hover{background:#16233a}
