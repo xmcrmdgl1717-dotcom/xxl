@@ -3,7 +3,7 @@ const TTL = 24 * 3600 * 1000;
 
 async function lookup(ip) {
   if (!ip) return { country: null, country_name: '未知' };
-  if (ip.startsWith('127.') || ip === '::1' || ip.startsWith('192.168.') || ip.startsWith('10.')) {
+  if (ip.startsWith('127.') || ip === '::1' || ip.startsWith('192.168.') || ip.startsWith('10.') || ip.startsWith('172.')) {
     return { country: null, country_name: '内网' };
   }
   const hit = cache.get(ip);
@@ -12,8 +12,11 @@ async function lookup(ip) {
   try {
     const ctrl = new AbortController();
     const t = setTimeout(() => ctrl.abort(), 2500);
-    const r = await fetch(`http://ip-api.com/json/${ip}?fields=status,countryCode,country&lang=zh-CN`,
-      { signal: ctrl.signal });
+    // 用 ip-api.com 免费版（HTTP）。失败自动降级
+    const r = await fetch(
+      `http://ip-api.com/json/${encodeURIComponent(ip)}?fields=status,countryCode,country&lang=zh-CN`,
+      { signal: ctrl.signal }
+    );
     clearTimeout(t);
     const j = await r.json();
     if (j.status === 'success') {
