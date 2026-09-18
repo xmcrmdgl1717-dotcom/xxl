@@ -30,10 +30,12 @@ app.use(session({
   },
 }));
 
+// 登录页
 app.get('/admin/login', (req, res) => {
   res.sendFile(path.join(__dirname, '..', 'public', 'admin-login.html'));
 });
 
+// 登录
 app.post('/api/login', (req, res) => {
   const ip = (req.headers['x-forwarded-for'] || '').split(',')[0].trim()
            || req.socket.remoteAddress || '';
@@ -55,21 +57,23 @@ app.post('/api/logout', (req, res) => {
   req.session.destroy(() => res.json({ ok: true }));
 });
 
+// 埋点（公开）
 app.use('/api/track', trackRouter);
 
+// 后台接口（鉴权）
 app.use('/api/stats',    auth.requireAuth, statsRouter);
 app.use('/api/visits',   auth.requireAuth, visitsRouter);
 app.use('/api/settings', auth.requireAuth, settingsRouter);
 
-app.get('/admin', auth.requireAuth, (req, res) =>
-  res.sendFile(path.join(__dirname, '..', 'public', 'admin.html')));
-app.get('/admin/', auth.requireAuth, (req, res) =>
+// 后台页面 + 静态资源（必须先于 express.static）
+app.get(['/admin', '/admin/'], auth.requireAuth, (req, res) =>
   res.sendFile(path.join(__dirname, '..', 'public', 'admin.html')));
 app.get('/admin.css', auth.requireAuth, (req, res) =>
   res.sendFile(path.join(__dirname, '..', 'public', 'admin.css')));
 app.get('/admin.js', auth.requireAuth, (req, res) =>
   res.sendFile(path.join(__dirname, '..', 'public', 'admin.js')));
 
+// 游戏静态资源
 app.use(express.static(path.join(__dirname, '..', 'public'), { index: 'index.html' }));
 app.get('/', (req, res) =>
   res.sendFile(path.join(__dirname, '..', 'public', 'index.html')));
