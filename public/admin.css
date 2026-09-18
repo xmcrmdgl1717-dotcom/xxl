@@ -20,27 +20,32 @@ body{margin:0;background:var(--bg);color:var(--fg);
 .card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px 16px}
 .card .k{color:var(--muted);font-size:13px;margin-bottom:8px}
 .card .v{font-size:26px;font-weight:800;color:#9ecbff}
-
-/* 可点击卡片 */
 .card[data-device]{cursor:pointer;transition:.15s;user-select:none}
 .card[data-device]:hover{background:#1a2436;border-color:var(--blue)}
 .card.active{border-color:var(--blue);background:#16233a;box-shadow:0 0 0 2px #2f6df655}
 .card.active .v{color:#fff}
 
-.filters{display:flex;gap:10px;flex-wrap:wrap;align-items:end;
-  background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px;margin-bottom:12px}
-.filters label{display:flex;flex-direction:column;gap:6px;font-size:12px;color:var(--muted)}
-.filters select,.filters input{background:#0e1420;border:1px solid var(--line2);color:var(--fg);
-  padding:8px 10px;border-radius:8px;font-size:13px;outline:none}
-.filters .grow{flex:1;min-width:220px}
+/* 筛选栏：多下拉 + 输入框，自动换行 */
+.filters{
+  display:flex;gap:10px;flex-wrap:wrap;align-items:end;
+  background:var(--card);border:1px solid var(--line);border-radius:12px;
+  padding:14px;margin-bottom:12px;
+}
+.filters label{display:flex;flex-direction:column;gap:6px;font-size:12px;color:var(--muted);min-width:0}
+.filters select,.filters input{
+  background:#0e1420;border:1px solid var(--line2);color:var(--fg);
+  padding:8px 10px;border-radius:8px;font-size:13px;outline:none;
+}
+.filters select{min-width:110px;max-width:180px}
+.filters .grow{flex:1 1 260px;min-width:220px}
 .filters .grow input{width:100%}
 
-.toolbar{display:flex;gap:10px;align-items:center;margin-bottom:14px}
+.toolbar{display:flex;gap:10px;align-items:center;margin-bottom:14px;flex-wrap:wrap}
 .count{color:var(--muted);margin-left:auto;font-size:13px}
 
 .list{display:flex;flex-direction:column;gap:10px}
 .item{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px 16px}
-.item .r1{display:flex;align-items:center;gap:10px;margin-bottom:10px}
+.item .r1{display:flex;align-items:center;gap:10px;margin-bottom:10px;flex-wrap:wrap}
 .item .r1 .fp{background:#0e1420;border:1px solid var(--line2);padding:3px 8px;border-radius:6px;
   font-family:ui-monospace,Consolas,monospace;font-size:12px;color:#9ecbff}
 .item .r1 .spacer{flex:1}
@@ -56,11 +61,10 @@ body{margin:0;background:var(--bg);color:var(--fg);
 .iconbtn.red{color:#fca5a5;border-color:#5b2020}
 input[type=checkbox]{accent-color:var(--blue);width:16px;height:16px}
 
-/* 可点击的字段 */
 .clickable{cursor:pointer;transition:.15s}
 .clickable:hover{color:#fff;text-decoration:underline;background:#16233a}
 
-.pager{display:flex;justify-content:center;gap:8px;margin:20px 0}
+.pager{display:flex;justify-content:center;gap:8px;margin:20px 0;flex-wrap:wrap}
 .pager button{border:1px solid var(--line2);background:transparent;color:var(--fg);
   padding:6px 12px;border-radius:8px;cursor:pointer}
 .pager button.active{background:var(--blue);border-color:var(--blue)}
@@ -81,9 +85,8 @@ input[type=checkbox]{accent-color:var(--blue);width:16px;height:16px}
   padding:10px 12px;border-radius:8px;font-size:14px;outline:none}
 .hint{color:var(--muted);font-size:12px}
 .detail{background:#0e1420;border:1px solid var(--line2);border-radius:10px;padding:14px;
-  font-size:12px;color:#cbd5e1;white-space:pre-wrap;word-break:break-all;max-height:60vh;overflow:auto}
+  font-size:12px;color:#cbd5e1;max-height:60vh;overflow:auto}
 
-/* 明细弹窗中文化排版 */
 .dgrid{display:flex;flex-direction:column;gap:0}
 .drow{display:flex;gap:12px;padding:8px 4px;border-bottom:1px solid var(--line);font-size:13px}
 .drow:last-child{border-bottom:0}
@@ -94,8 +97,10 @@ input[type=checkbox]{accent-color:var(--blue);width:16px;height:16px}
   color:#fff;padding:10px 18px;border-radius:999px;opacity:0;transition:.25s;pointer-events:none;z-index:99}
 .toast.show{opacity:1;transform:translate(-50%,0)}
 
-@media(max-width:900px){ .cards{grid-template-columns:repeat(3,1fr)} }
-@media(max-width:560px){
+@media(max-width:1100px){ .cards{grid-template-columns:repeat(3,1fr)} }
+@media(max-width:640px){
   .cards{grid-template-columns:repeat(2,1fr)}
   .filters{flex-direction:column;align-items:stretch}
+  .filters select{max-width:none;width:100%}
+  .filters .grow{min-width:0}
 }
