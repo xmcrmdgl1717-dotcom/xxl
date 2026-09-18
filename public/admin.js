@@ -8,7 +8,7 @@ function toast(msg) {
 function fmtDuration(sec) {
   sec = Math.max(0, Math.round(sec || 0));
   const m = Math.floor(sec / 60), s = sec % 60;
-  if (m >= 60) { const h = Math.floor(m / 60); return `${h}h${m % 60}m`; }
+  if (m >= 60) { const h = Math.floor(m / 60); return `${h}h ${m % 60}m`; }
   return m ? `${m}m ${s}s` : `${s}s`;
 }
 function fmtTime(s) {
@@ -18,6 +18,12 @@ function fmtTime(s) {
   return `${d.getFullYear()}/${d.getMonth() + 1}/${d.getDate()} ${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
 }
 const deviceLabel = { android:'安卓', ios:'苹果', desktop:'桌面', unknown:'未知' };
+
+const LANG_LABEL = {
+  en:'英语', zh:'简体中文', zht:'繁体中文', es:'西班牙语', ar:'阿拉伯语',
+  pt:'葡萄牙语', id:'印尼语', fr:'法语', ja:'日语', ru:'俄语', de:'德语',
+  ko:'韩语', vi:'越南语', tr:'土耳其语', hi:'印地语', th:'泰语', ur:'乌尔都语',
+};
 
 async function api(path, opt = {}) {
   const r = await fetch(path, {
@@ -83,6 +89,12 @@ function flag(cc) {
   return String.fromCodePoint(...cc.toUpperCase().split('').map(c => 127397 + c.charCodeAt(0)));
 }
 
+function escapeHtml(s) {
+  return String(s).replace(/[&<>"']/g, c => ({
+    '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'
+  }[c]));
+}
+
 async function loadList() {
   const data = await api('/api/visits?' + buildQuery());
   $('#totalHint').textContent = `共 ${data.total} 条（当前筛选）`;
@@ -135,6 +147,43 @@ function renderPager(total) {
   });
 }
 
+/* ================= 明细中文化 ================= */
+function renderDetail(r) {
+  const rows = [
+    ['记录 ID',        r.id],
+    ['会话 ID',        r.session_id],
+    ['浏览器指纹',      r.fingerprint || '—'],
+    ['IP 地址',        r.ip || '—'],
+    ['国家/地区',       (r.country_name || '未知') + (r.country ? `（${r.country}）` : '')],
+    ['设备类型',        deviceLabel[r.device_type] || r.device_type || '未知'],
+    ['操作系统',        r.os || '未知'],
+    ['浏览器',          r.browser || '未知'],
+    ['界面语言',        LANG_LABEL[r.lang] ? `${LANG_LABEL[r.lang]}（${r.lang}）` : (r.lang || '未知')],
+    ['进入时间',        fmtTime(r.entered_at)],
+    ['最后活跃',        fmtTime(r.last_seen_at)],
+    ['离开时间',        fmtTime(r.left_at)],
+    ['停留时长',        fmtDuration(r.duration_sec)],
+    ['页面可见时长',     fmtDuration(r.visible_seconds)],
+    ['游戏内用时',      fmtDuration(r.play_seconds)],
+    ['到达关卡',        `第 ${r.level_reached} 关`],
+    ['最高关卡',        `第 ${r.max_level} 关`],
+    ['已通关数',        `${r.levels_cleared} 关`],
+    ['访问次数',        r.visit_count],
+    ['来源页面',        r.referrer || '直接访问'],
+    ['User-Agent',     r.user_agent || '—'],
+    ['创建时间',        fmtTime(r.created_at)],
+  ];
+
+  const html = rows.map(([k, v]) => `
+    <div class="drow">
+      <div class="dk">${k}</div>
+      <div class="dv">${escapeHtml(v ?? '—')}</div>
+    </div>
+  `).join('');
+
+  return `<div class="dgrid">${html}</div>`;
+}
+
 /* ================= 列表内点击 ================= */
 $('#list').addEventListener('click', async (e) => {
   // 通用搜索字段
@@ -156,7 +205,7 @@ $('#list').addEventListener('click', async (e) => {
   const act = e.target.dataset.act;
   if (act === 'detail') {
     const r = await api('/api/visits/' + id);
-    $('#detailBody').textContent = JSON.stringify(r, null, 2);
+    $('#detailBody').innerHTML = renderDetail(r);
     $('#mDetail').classList.remove('hidden');
   } else if (act === 'del') {
     if (!confirm('确认删除这条记录？')) return;
