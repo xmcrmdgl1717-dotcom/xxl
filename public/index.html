@@ -80,7 +80,7 @@
       th:{name:'ไทล์ทรีโอ',subtitle:'เลือกแผ่นบนสุด · จับคู่ 3',currentLevel:'ด่าน',remaining:'เหลือ',gameTime:'เวลา',tray:'ช่องเก็บ',undo:'ย้อนกลับ',shuffle:'สลับ',rescue:'นำออก',once:'เหลือ 1 ครั้ง',ready:'พร้อมไหม?',intro:'เลือกแผ่นที่ไม่ถูกบังและจับคู่ให้ครบสาม ช่องเก็บเต็มจะจบเกม',start:'เริ่มเกม',share:'แชร์ให้เพื่อน',level:'ด่าน {n}',win:'ผ่านด่าน {n}!',warm:'ผ่านช่วงฝึกแล้ว ด่าน 2 จะมีหลายชั้นและรูปมากขึ้น',streak:'ผ่าน {n} ด่านใน {t} ด่านถัดไปยากขึ้น',fail:'ช่องเก็บเต็ม',failText:'เกือบแล้ว! จับคู่รูปที่มีอยู่สองแผ่นก่อน',next:'ด่านถัดไป',retry:'ลองใหม่',blocked:'แผ่นนี้ยังถูกบังอยู่',match:'ลบ {x} × 3',restart:'เริ่มด่านนี้ใหม่?',soundOn:'เปิดเสียง',soundOff:'ปิดเสียง',undone:'ย้อนกลับแล้ว',shuffled:'สลับแผ่นแล้ว',moved:'นำออก {n} แผ่น',shareText:'มาแข่งเวลาในไทล์ทรีโอกัน!',copied:'คัดลอกลิงก์แล้ว'},
       id:{name:'Trio Ubin',subtitle:'Pilih paling atas · Cocokkan 3',currentLevel:'Level',remaining:'Tersisa',gameTime:'Waktu',tray:'Baki',undo:'Urungkan',shuffle:'Acak',rescue:'Keluarkan',once:'Sisa 1 kali',ready:'Siap?',intro:'Pilih ubin yang terbuka dan cocokkan tiga. Baki penuh berarti kalah.',start:'Mulai',share:'Bagikan',level:'Level {n}',win:'Level {n} selesai!',warm:'Pemanasan selesai. Level 2 punya lebih banyak lapisan dan simbol.',streak:'Kamu menyelesaikan {n} level dalam {t}. Berikutnya lebih sulit.',fail:'Baki penuh',failText:'Hampir! Dahulukan simbol yang sudah terkumpul dua.',next:'Level berikutnya',retry:'Coba lagi',blocked:'Ubin ini masih tertutup',match:'{x} × 3 dihapus',restart:'Mulai ulang level ini?',soundOn:'Suara aktif',soundOff:'Suara mati',undone:'Langkah dibatalkan',shuffled:'Ubin diacak',moved:'{n} ubin dikeluarkan',shareText:'Bisakah kamu mengalahkan waktuku di Trio Ubin?',copied:'Tautan disalin'}
     };
-    // [B-改动2] 使用外部注入的语言（window.__DDX_LANG），并保留原判定逻辑
+    // [改动2] 使用外部注入的语言（window.__DDX_LANG），其余判定逻辑保持原样
     const rawLang=(window.__DDX_LANG || navigator.languages?.[0] || navigator.language || 'en').toLowerCase();
     const lang=rawLang==='zht'?'zht':rawLang.startsWith('zh-tw')||rawLang.startsWith('zh-hk')||rawLang.startsWith('zh-mo')?'zht':rawLang.startsWith('zh')?'zh':Object.keys(LANG).find(k=>rawLang.startsWith(k))||'en';
     const tr=(key,vars={})=>Object.entries(vars).reduce((s,[k,v])=>s.replaceAll(`{${k}}`,v),LANG[lang]?.[key]||LANG.en[key]||key);
@@ -132,7 +132,7 @@
     window.addEventListener('resize',fit);window.addEventListener('orientationchange',()=>setTimeout(fit,180));if('ResizeObserver'in window)new ResizeObserver(fit).observe(board);for(let i=0;i<7;i++){const d=document.createElement('div');d.className='slot';trayEl.appendChild(d)}
   </script>
 
-  <!-- ================= [B-改动3] 埋点 + 语言选择器（纯新增，不改原脚本） ================= -->
+  <!-- ================= [改动3] 埋点 + 语言选择器（纯新增，不改原脚本） ================= -->
   <script>
   (function(){
     const LANGS = [
@@ -152,7 +152,6 @@
       { code:'hi', name:'हिन्दी',            region:'IN' },
       { code:'th', name:'ไทย',             region:'TH' },
     ];
-
     const COUNTRY_LANG = {
       CN:'zh',TW:'zht',HK:'zht',MO:'zht',SG:'en',
       US:'en',GB:'en',AU:'en',CA:'en',NZ:'en',IE:'en',IN:'en',PH:'en',
@@ -207,7 +206,26 @@
       sessionStorage.setItem(SESSION_KEY, sessionId);
     }
 
-    let visibleSeconds = 0, lastTick = Date.now(), hbInterval = 30, hbTimeout = 1800;
+    let visibleSeconds = 0, lastTick = Date.now(), hbInterval = 30;
+
+    /* ⭐ 从游戏 DOM 里读当前关卡（解决"永远第 1 关"） */
+    function getCurrentLevel() {
+      try {
+        const el = document.getElementById('level');
+        if (!el) return 1;
+        const m = String(el.textContent).match(/(\d+)/);
+        return m ? parseInt(m[1], 10) : 1;
+      } catch { return 1; }
+    }
+    /* ⭐ 从游戏 DOM 里读游戏内用时（秒） */
+    function getPlaySeconds() {
+      try {
+        const el = document.getElementById('timer');
+        if (!el) return 0;
+        const m = String(el.textContent).match(/(\d+):(\d+)/);
+        return m ? (+m[1]) * 60 + (+m[2]) : 0;
+      } catch { return 0; }
+    }
 
     function post(path, data, beacon){
       const url = '/api/track' + path;
@@ -238,7 +256,6 @@
         const r = await fetch('/api/track/config', { credentials:'same-origin' });
         const j = await r.json();
         hbInterval = j.heartbeat_interval || 30;
-        hbTimeout  = j.heartbeat_timeout  || 1800;
       }catch(e){}
 
       const lang = await resolveLang();
@@ -253,9 +270,13 @@
         const now = Date.now();
         if (document.visibilityState === 'visible') visibleSeconds += (now - lastTick) / 1000;
         lastTick = now;
-        const lv = (window.S && window.S.level) || 1;
-        post('/heartbeat', { session_id: sessionId,
-          visible_seconds: Math.round(visibleSeconds), level_reached: lv });
+        // ⭐ 从 DOM 读关卡和用时
+        post('/heartbeat', {
+          session_id: sessionId,
+          visible_seconds: Math.round(visibleSeconds),
+          level_reached: getCurrentLevel(),
+          play_seconds: getPlaySeconds(),
+        });
       }, hbInterval * 1000);
 
       const leave = () => post('/leave',
@@ -281,8 +302,7 @@
         const code = b.dataset.code;
         localStorage.setItem('ddx-lang', code);
         window.DDX_TRACK.onLang(code);
-        // 提示用户刷新，让原脚本重新按新语言渲染
-        location.reload();
+        location.reload();  // 方案 B 需刷新才能生效
       });
     }
     document.getElementById('langBtn').onclick = openLangPicker;
