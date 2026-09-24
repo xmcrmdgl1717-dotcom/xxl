@@ -3,7 +3,6 @@ const router = express.Router();
 const { db } = require('../db');
 const { stringify } = require('csv-stringify/sync');
 
-/* ============ 构建 WHERE 条件 ============ */
 function buildWhere(q) {
   const where = []; const params = [];
   const { date, from, to, device, level, country, os, browser, lang, q: kw } = q;
@@ -11,7 +10,10 @@ function buildWhere(q) {
   if (date === 'today') where.push("date(entered_at) = date('now')");
   else if (date === '7d')  where.push("entered_at >= datetime('now','-7 days')");
   else if (date === '30d') where.push("entered_at >= datetime('now','-30 days')");
-  else if (date === 'custom' && from && to) { where.push('entered_at BETWEEN ? AND ?'); params.push(from, to + ' 23:59:59'); }
+  else if (date === 'custom' && from && to) {
+    where.push("date(entered_at) >= date(?) AND date(entered_at) <= date(?)");
+    params.push(from, to);
+  }
 
   if (device  && device  !== 'all') { where.push('device_type = ?'); params.push(device); }
   if (country && country !== 'all') { where.push('country_name = ?'); params.push(country); }
@@ -24,7 +26,6 @@ function buildWhere(q) {
     else { where.push('level_reached = ?'); params.push(parseInt(level, 10)); }
   }
 
-  // 搜索框：全字段模糊匹配
   if (kw) {
     where.push(`(
       ip LIKE ? OR
@@ -43,7 +44,6 @@ function buildWhere(q) {
   return { sql: where.length ? 'WHERE ' + where.join(' AND ') : '', params };
 }
 
-/* ============ 下拉选项（DISTINCT） ============ */
 router.get('/options', (req, res) => {
   const rows = (col) =>
     db.prepare(`SELECT DISTINCT ${col} AS v FROM visits WHERE ${col} IS NOT NULL AND ${col} != '' ORDER BY v`).all().map(r => r.v);
@@ -55,7 +55,6 @@ router.get('/options', (req, res) => {
   });
 });
 
-/* ============ 导出 CSV（必须在 /:id 之前） ============ */
 router.get('/export/csv', (req, res) => {
   const { sql, params } = buildWhere(req.query);
   const rows = db.prepare(`SELECT * FROM visits ${sql} ORDER BY entered_at DESC`).all(...params);
@@ -70,7 +69,6 @@ router.get('/export/csv', (req, res) => {
   res.send('\ufeff' + csv);
 });
 
-/* ============ 列表 ============ */
 router.get('/', (req, res) => {
   const { sql, params } = buildWhere(req.query);
   const page = Math.max(1, parseInt(req.query.page || '1', 10));
@@ -81,7 +79,6 @@ router.get('/', (req, res) => {
   res.json({ total, page, size, rows });
 });
 
-/* ============ 批量删除 ============ */
 router.post('/batch-delete', (req, res) => {
   const ids = req.body?.ids || [];
   if (!ids.length) return res.json({ ok: true, deleted: 0 });
@@ -91,7 +88,6 @@ router.post('/batch-delete', (req, res) => {
   res.json({ ok: true, deleted: ids.length });
 });
 
-/* ============ 单条 ============ */
 router.get('/:id', (req, res) => {
   const row = db.prepare('SELECT * FROM visits WHERE id=?').get(req.params.id);
   if (!row) return res.status(404).json({ error: 'not found' });

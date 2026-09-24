@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="zh-CN">
+<html lang="zh-CN" data-theme="light">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
@@ -11,18 +11,19 @@
   <header class="topbar">
     <div class="title"><span class="ico">📋</span> 游戏访问记录</div>
     <div class="actions">
+      <button class="btn ghost" id="btnTheme">☀️ 浅色</button>
       <button class="btn ghost" id="btnRefresh">🔄 刷新</button>
       <button class="btn ghost" id="btnLogout">🚪 退出</button>
     </div>
   </header>
 
   <section class="cards" id="cards">
-    <div class="card" id="cardVisits"><div class="k">👣 访问量</div><div class="v" id="cVisits">-</div></div>
+    <div class="card" id="cardVisits" data-device="all"><div class="k">👣 访问量</div><div class="v" id="cVisits">-</div></div>
     <div class="card" id="cardAndroid" data-device="android"><div class="k">📱 安卓</div><div class="v" id="cAndroid">-</div></div>
     <div class="card" id="cardIos" data-device="ios"><div class="k">🍎 苹果</div><div class="v" id="cIos">-</div></div>
     <div class="card" id="cardDesktop" data-device="desktop"><div class="k">🖥 桌面</div><div class="v" id="cDesktop">-</div></div>
     <div class="card" id="cardUnknown" data-device="unknown"><div class="k">❓ 未知设备</div><div class="v" id="cUnknown">-</div></div>
-    <div class="card" id="cardAvg"><div class="k">⏱ 平均停留</div><div class="v" id="cAvg">-</div></div>
+    <div class="card" id="cardAvg" data-device="all"><div class="k">⏱ 平均停留</div><div class="v" id="cAvg">-</div></div>
   </section>
 
   <section class="filters">
@@ -32,7 +33,15 @@
         <option value="today" selected>今天</option>
         <option value="7d">近 7 天</option>
         <option value="30d">近 30 天</option>
+        <option value="custom">自定义</option>
       </select>
+    </label>
+    <label id="dateRangeBox" style="display:none">日期
+      <span style="display:flex;gap:6px">
+        <input type="date" id="fFrom" style="width:130px">
+        <span style="align-self:center;color:var(--muted)">至</span>
+        <input type="date" id="fTo" style="width:130px">
+      </span>
     </label>
     <label>设备
       <select id="fDevice">
@@ -75,6 +84,17 @@
     <button class="btn ghost" id="btnExport">📥 导出 CSV</button>
     <button class="btn ghost danger" id="btnBatchDel">🗑 批量删除</button>
     <button class="btn ghost" id="btnSettings">⚙ 设置</button>
+    <label class="page-size-label">每页
+      <select id="fPageSize">
+        <option value="20">20</option>
+        <option value="50" selected>50</option>
+        <option value="100">100</option>
+        <option value="200">200</option>
+        <option value="500">500</option>
+      </select>
+    </label>
+    <button class="btn ghost" id="btnSelectAll">☑ 全选当页</button>
+    <button class="btn ghost" id="btnClearSel">☐ 取消勾选</button>
     <span class="count" id="totalHint">共 0 条</span>
   </section>
 

@@ -1,3 +1,5 @@
+const fetch = require('node-fetch');
+
 const cache = new Map();
 const TTL = 24 * 3600 * 1000;
 
@@ -12,7 +14,6 @@ async function lookup(ip) {
   try {
     const ctrl = new AbortController();
     const t = setTimeout(() => ctrl.abort(), 2500);
-    // 用 ip-api.com 免费版（HTTP）。失败自动降级
     const r = await fetch(
       `http://ip-api.com/json/${encodeURIComponent(ip)}?fields=status,countryCode,country&lang=zh-CN`,
       { signal: ctrl.signal }

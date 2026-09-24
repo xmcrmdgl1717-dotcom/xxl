@@ -1,10 +1,11 @@
 const $ = s => document.querySelector(s);
 const state = {
   page: 1,
-  size: 20,
+  size: 50,
   filter: {
     date: 'today', device: 'all', level: 'all',
     country: 'all', os: 'all', browser: 'all', lang: 'all',
+    from: '', to: '',
     q: '',
   },
 };
@@ -32,6 +33,23 @@ const LANG_LABEL = {
   ko:'韩语', vi:'越南语', tr:'土耳其语', hi:'印地语', th:'泰语', ur:'乌尔都语',
 };
 
+/* ================= 主题切换（默认浅色） ================= */
+function applyTheme(theme) {
+  const t = theme === 'dark' ? 'dark' : 'light';
+  document.documentElement.setAttribute('data-theme', t);
+  localStorage.setItem('ddx-admin-theme', t);
+  const btn = $('#btnTheme');
+  if (btn) btn.textContent = (t === 'light') ? '☀️ 浅色' : '🌙 深色';
+}
+function initTheme() {
+  const saved = localStorage.getItem('ddx-admin-theme') || 'light';
+  applyTheme(saved);
+}
+$('#btnTheme').onclick = () => {
+  const cur = document.documentElement.getAttribute('data-theme') || 'light';
+  applyTheme(cur === 'dark' ? 'light' : 'dark');
+};
+
 async function api(path, opt = {}) {
   const r = await fetch(path, {
     headers: { 'Content-Type': 'application/json' },
@@ -44,7 +62,19 @@ async function api(path, opt = {}) {
 
 /* ================= 统计卡片 ================= */
 async function loadStats() {
-  const s = await api('/api/stats');
+  const q = new URLSearchParams({
+    date:    state.filter.date,
+    device:  state.filter.device,
+    level:   state.filter.level,
+    country: state.filter.country,
+    os:      state.filter.os,
+    browser: state.filter.browser,
+    lang:    state.filter.lang,
+    from:    state.filter.from,
+    to:      state.filter.to,
+    q:       state.filter.q,
+  }).toString();
+  const s = await api('/api/stats?' + q);
   $('#cVisits').textContent = s.visits;
   $('#cAndroid').textContent = s.android;
   $('#cIos').textContent = s.ios;
@@ -61,7 +91,11 @@ function highlightCards() {
 document.querySelectorAll('.card[data-device]').forEach(card => {
   card.onclick = () => {
     const dev = card.dataset.device;
-    state.filter.device = (state.filter.device === dev) ? 'all' : dev;
+    if (dev === 'all') {
+      state.filter.device = 'all';
+    } else {
+      state.filter.device = (state.filter.device === dev) ? 'all' : dev;
+    }
     state.page = 1;
     syncUI();
     refresh();
@@ -75,7 +109,6 @@ async function loadOptions() {
   fillSelect('#fOs',      o.os);
   fillSelect('#fBrowser', o.browsers);
   fillSelect('#fLang',    o.langs);
-  // 保留当前选中值
   syncUI();
 }
 function fillSelect(sel, arr) {
@@ -100,6 +133,15 @@ function syncUI() {
   $('#fBrowser').value = state.filter.browser;
   $('#fLang').value    = state.filter.lang;
   $('#fKw').value      = state.filter.q;
+  $('#fPageSize').value = String(state.size);
+
+  const showCustom = state.filter.date === 'custom';
+  $('#dateRangeBox').style.display = showCustom ? '' : 'none';
+  if (showCustom) {
+    if (state.filter.from) $('#fFrom').value = state.filter.from;
+    if (state.filter.to)   $('#fTo').value   = state.filter.to;
+  }
+
   highlightCards();
 }
 
@@ -113,6 +155,8 @@ function buildQuery() {
     os:      state.filter.os,
     browser: state.filter.browser,
     lang:    state.filter.lang,
+    from:    state.filter.from,
+    to:      state.filter.to,
     q:       state.filter.q,
     page:    state.page,
     size:    state.size,
@@ -129,7 +173,7 @@ async function loadList() {
   $('#totalHint').textContent = `共 ${data.total} 条（当前筛选）`;
   const list = $('#list');
   if (!data.rows.length) {
-    list.innerHTML = '<div class="item" style="text-align:center;color:#7c8aa0">暂无数据</div>';
+    list.innerHTML = '<div class="item" style="text-align:center;color:var(--muted)">暂无数据</div>';
     renderPager(0); return;
   }
   list.innerHTML = data.rows.map(r => `
@@ -160,6 +204,7 @@ async function loadList() {
     </div>
   `).join('');
   renderPager(data.total);
+  updateSelectAllState();
 }
 
 function renderPager(total) {
@@ -175,6 +220,30 @@ function renderPager(total) {
     b.onclick = () => { state.page = parseInt(b.dataset.page, 10); loadList(); };
   });
 }
+
+/* ================= 全选 / 取消 ================= */
+function updateSelectAllState() {
+  const boxes = [...document.querySelectorAll('.ck')];
+  const checked = boxes.filter(b => b.checked).length;
+  const btn = $('#btnSelectAll');
+  if (!btn) return;
+  if (boxes.length && checked === boxes.length) btn.textContent = `☑ 已全选（${checked}）`;
+  else if (checked > 0) btn.textContent = `☑ 全选当页（已选 ${checked}）`;
+  else btn.textContent = `☑ 全选当页`;
+}
+$('#btnSelectAll').onclick = () => {
+  document.querySelectorAll('.ck').forEach(b => b.checked = true);
+  updateSelectAllState();
+};
+$('#btnClearSel').onclick = () => {
+  document.querySelectorAll('.ck').forEach(b => b.checked = false);
+  updateSelectAllState();
+};
+document.addEventListener('change', (e) => {
+  if (e.target && e.target.classList && e.target.classList.contains('ck')) {
+    updateSelectAllState();
+  }
+});
 
 /* ================= 明细中文化 ================= */
 function renderDetail(r) {
@@ -212,11 +281,11 @@ function renderDetail(r) {
 
 /* ================= 列表内点击 ================= */
 $('#list').addEventListener('click', async (e) => {
-  // 自由搜索字段（IP / 指纹）
+  if (e.target.classList.contains('ck')) return;
+
   const sEl = e.target.closest('[data-search]');
   if (sEl && sEl.dataset.search) { setSearch(sEl.dataset.search); return; }
 
-  // 设备：同步到下拉
   const dEl = e.target.closest('[data-device-pick]');
   if (dEl && dEl.dataset.devicePick) {
     state.filter.device = dEl.dataset.devicePick;
@@ -226,10 +295,9 @@ $('#list').addEventListener('click', async (e) => {
     return;
   }
 
-  // 其他字段：同步到对应下拉
   const fEl = e.target.closest('[data-filter]');
   if (fEl && fEl.dataset.filter) {
-    const key = fEl.dataset.filter;    // country / os / browser / lang
+    const key = fEl.dataset.filter;
     const val = fEl.dataset.value;
     if (key in state.filter) {
       state.filter[key] = val || 'all';
@@ -262,7 +330,22 @@ function setSearch(kw) {
 }
 
 /* ================= 筛选栏事件 ================= */
-$('#fDate').onchange    = () => { state.filter.date    = $('#fDate').value;    state.page = 1; refresh(); };
+$('#fDate').onchange = () => {
+  state.filter.date = $('#fDate').value;
+  const showCustom = state.filter.date === 'custom';
+  $('#dateRangeBox').style.display = showCustom ? '' : 'none';
+  if (showCustom && !$('#fFrom').value) {
+    const today = new Date().toISOString().slice(0, 10);
+    $('#fFrom').value = today;
+    $('#fTo').value = today;
+    state.filter.from = today;
+    state.filter.to = today;
+  }
+  state.page = 1;
+  refresh();
+};
+$('#fFrom').onchange = () => { state.filter.from = $('#fFrom').value; state.page = 1; refresh(); };
+$('#fTo').onchange   = () => { state.filter.to   = $('#fTo').value;   state.page = 1; refresh(); };
 $('#fDevice').onchange  = () => { state.filter.device  = $('#fDevice').value;  state.page = 1; refresh(); };
 $('#fLevel').onchange   = () => { state.filter.level   = $('#fLevel').value;   state.page = 1; refresh(); };
 $('#fCountry').onchange = () => { state.filter.country = $('#fCountry').value; state.page = 1; refresh(); };
@@ -270,14 +353,25 @@ $('#fOs').onchange      = () => { state.filter.os      = $('#fOs').value;      s
 $('#fBrowser').onchange = () => { state.filter.browser = $('#fBrowser').value; state.page = 1; refresh(); };
 $('#fLang').onchange    = () => { state.filter.lang    = $('#fLang').value;    state.page = 1; refresh(); };
 
+/* 每页条数 */
+$('#fPageSize').onchange = () => {
+  state.size = parseInt($('#fPageSize').value, 10) || 50;
+  state.page = 1;
+  loadList();
+};
+
 $('#btnSearch').onclick = () => { state.filter.q = $('#fKw').value.trim(); state.page = 1; refresh(); };
 $('#fKw').addEventListener('keydown', e => { if (e.key === 'Enter') $('#btnSearch').click(); });
 
 $('#btnReset').onclick = () => {
   state.filter = {
     date: 'today', device: 'all', level: 'all',
-    country: 'all', os: 'all', browser: 'all', lang: 'all', q: '',
+    country: 'all', os: 'all', browser: 'all', lang: 'all',
+    from: '', to: '', q: '',
   };
+  $('#dateRangeBox').style.display = 'none';
+  $('#fFrom').value = '';
+  $('#fTo').value = '';
   state.page = 1;
   syncUI();
   refresh();
@@ -289,7 +383,8 @@ $('#btnExport').onclick = () => {
     date: state.filter.date, device: state.filter.device,
     level: state.filter.level, country: state.filter.country,
     os: state.filter.os, browser: state.filter.browser,
-    lang: state.filter.lang, q: state.filter.q,
+    lang: state.filter.lang, from: state.filter.from, to: state.filter.to,
+    q: state.filter.q,
   });
   location.href = '/api/visits/export/csv?' + q.toString();
 };
@@ -347,6 +442,7 @@ $('#btnSaveRt').onclick = async () => {
 
 /* ================= 统一刷新 + 启动 ================= */
 function refresh() { loadStats(); loadList(); }
+initTheme();
 syncUI();
 refresh();
 loadOptions();
