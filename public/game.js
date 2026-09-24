@@ -25,23 +25,24 @@
     id:{name:'Trio Ubin',subtitle:'Pilih paling atas · Cocokkan 3',currentLevel:'Level',remaining:'Tersisa',gameTime:'Waktu',tray:'Baki',undo:'Urungkan',shuffle:'Acak',rescue:'Keluarkan',once:'Sisa 1 kali',ready:'Siap?',intro:'Pilih ubin yang terbuka dan cocokkan tiga. Baki penuh berarti kalah.',start:'Mulai',share:'Bagikan',level:'Level {n}',win:'Level {n} selesai!',warm:'Pemanasan selesai. Level 2 punya lebih banyak lapisan dan simbol.',streak:'Kamu menyelesaikan {n} level dalam {t}. Berikutnya lebih sulit.',fail:'Baki penuh',failText:'Hampir! Dahulukan simbol yang sudah terkumpul dua.',next:'Level berikutnya',retry:'Coba lagi',blocked:'Ubin ini masih tertutup',match:'{x} × 3 dihapus',restart:'Mulai ulang level ini?',soundOn:'Suara aktif',soundOff:'Suara mati',undone:'Langkah dibatalkan',shuffled:'Ubin diacak',moved:'{n} ubin dikeluarkan',shareText:'Bisakah kamu mengalahkan waktuku di Trio Ubin?',copied:'Tautan disalin'}
   };
 
+  /* iOS 非 Safari 引导弹窗文案（16 种语言） */
   const GATE = {
-    en:['Best in Safari','Copy the address, open Safari, then press and hold the address bar to paste it. You can also use the iPhone share menu below.','Copy address','Copy & open Share menu'],
-    zh:['建议使用 Safari','请复制网址，打开 Safari 后长按地址栏并粘贴；也可以点击下方按钮调出 iPhone 系统分享菜单。','复制网址','复制并打开分享菜单'],
-    zht:['建議使用 Safari','請複製網址，開啟 Safari 後長按網址列並貼上；也可以點擊下方按鈕開啟 iPhone 系統分享選單。','複製網址','複製並開啟分享選單'],
-    ja:['Safari がおすすめです','アドレスをコピーし、Safariを開いてアドレス欄を長押しして貼り付けてください。下のボタンからiPhoneの共有メニューも開けます。','アドレスをコピー','コピーして共有を開く'],
-    ko:['Safari 사용 권장','주소를 복사한 뒤 Safari를 열고 주소창을 길게 눌러 붙여 넣으세요. 아래 버튼으로 iPhone 공유 메뉴도 열 수 있습니다.','주소 복사','복사하고 공유 열기'],
-    es:['Mejor en Safari','Copia la dirección, abre Safari y mantén pulsada la barra para pegarla. También puedes abrir el menú Compartir del iPhone.','Copiar dirección','Copiar y abrir Compartir'],
-    fr:['Safari recommandé','Copiez l’adresse, ouvrez Safari puis maintenez la barre d’adresse pour la coller. Vous pouvez aussi ouvrir le menu Partager.','Copier l’adresse','Copier et partager'],
-    de:['Safari empfohlen','Kopiere die Adresse, öffne Safari und halte die Adressleiste zum Einfügen gedrückt. Unten kannst du auch das iPhone-Teilen-Menü öffnen.','Adresse kopieren','Kopieren & Teilen öffnen'],
-    pt:['Melhor no Safari','Copie o endereço, abra o Safari e pressione a barra para colar. Você também pode abrir o menu Compartilhar do iPhone.','Copiar endereço','Copiar e abrir Compartilhar'],
-    ru:['Лучше в Safari','Скопируйте адрес, откройте Safari и удерживайте адресную строку, чтобы вставить его. Также можно открыть меню «Поделиться».','Копировать адрес','Копировать и поделиться'],
-    ar:['يفضل استخدام Safari','انسخ العنوان وافتح Safari ثم اضغط مطولاً على شريط العنوان للصقه. ويمكنك أيضاً فتح قائمة المشاركة.','نسخ العنوان','نسخ وفتح المشاركة'],
-    ur:['Safari میں بہتر','پتہ کاپی کریں، Safari کھولیں اور ایڈریس بار کو دیر تک دبا کر پیسٹ کریں۔ آپ نیچے iPhone کا شیئر مینو بھی کھول سکتے ہیں۔','پتہ کاپی کریں','کاپی کریں اور شیئر کھولیں'],
-    vi:['Tốt nhất trên Safari','Sao chép địa chỉ, mở Safari rồi nhấn giữ thanh địa chỉ để dán. Bạn cũng có thể mở menu Chia sẻ trên iPhone.','Sao chép địa chỉ','Sao chép và mở Chia sẻ'],
-    hi:['Safari में बेहतर','पता कॉपी करें, Safari खोलें और पेस्ट करने के लिए एड्रेस बार को दबाकर रखें। आप iPhone शेयर मेनू भी खोल सकते हैं।','पता कॉपी करें','कॉपी और शेयर खोलें'],
-    th:['แนะนำ Safari','คัดลอกที่อยู่ เปิด Safari แล้วแตะค้างที่ช่องที่อยู่เพื่อวาง หรือเปิดเมนูแชร์ของ iPhone ด้านล่าง','คัดลอกที่อยู่','คัดลอกและเปิดแชร์'],
-    id:['Lebih baik di Safari','Salin alamat, buka Safari, lalu tekan lama bilah alamat untuk menempel. Anda juga dapat membuka menu Bagikan iPhone.','Salin alamat','Salin & buka Bagikan']
+    en: ['Use Safari to open',        'For the best experience, copy the link below and open it in Safari.',                        '📋 Copy link',           '✅ Link copied. Open Safari and paste to visit.',        'Copy failed. Long-press the link above to copy manually.'],
+    zh: ['请用 Safari 打开',           '为了获得最佳游戏体验，请复制下方链接，打开 Safari 后粘贴访问。',                                 '📋 复制链接',              '✅ 已复制，请打开 Safari 粘贴访问',                       '复制失败，请长按上方链接手动复制'],
+    zht:['請用 Safari 開啟',           '為了獲得最佳遊戲體驗，請複製下方連結，開啟 Safari 後貼上訪問。',                                '📋 複製連結',              '✅ 已複製，請開啟 Safari 貼上訪問',                       '複製失敗，請長按上方連結手動複製'],
+    ja: ['Safari で開いてください',      '最高の体験のために、下のリンクをコピーして Safari で開いてください。',                            '📋 リンクをコピー',          '✅ コピーしました。Safari を開いて貼り付けてください',      'コピーに失敗しました。上のリンクを長押ししてコピーしてください'],
+    ko: ['Safari로 열어주세요',        '최상의 경험을 위해 아래 링크를 복사하여 Safari에서 열어주세요.',                                '📋 링크 복사',             '✅ 복사되었습니다. Safari를 열어 붙여넣기 하세요',          '복사 실패. 위 링크를 길게 눌러 복사하세요'],
+    es: ['Abre con Safari',           'Para una mejor experiencia, copia el enlace y ábrelo en Safari.',                               '📋 Copiar enlace',        '✅ Copiado. Abre Safari y pega el enlace.',               'Error al copiar. Mantén pulsado el enlace para copiarlo.'],
+    fr: ['Ouvrez avec Safari',        'Pour une meilleure expérience, copiez le lien et ouvrez-le dans Safari.',                        '📋 Copier le lien',        '✅ Copié. Ouvrez Safari et collez le lien.',              'Échec de la copie. Appuyez longuement sur le lien.'],
+    de: ['Mit Safari öffnen',         'Für das beste Erlebnis kopiere den Link und öffne ihn in Safari.',                               '📋 Link kopieren',         '✅ Kopiert. Öffne Safari und füge den Link ein.',          'Kopieren fehlgeschlagen. Link lange drücken.'],
+    pt: ['Abra com Safari',           'Para a melhor experiência, copie o link e abra no Safari.',                                      '📋 Copiar link',           '✅ Copiado. Abra o Safari e cole o link.',                'Falha ao copiar. Toque e segure o link.'],
+    ru: ['Откройте в Safari',         'Для лучшего опыта скопируйте ссылку и откройте её в Safari.',                                     '📋 Копировать ссылку',      '✅ Скопировано. Откройте Safari и вставьте ссылку.',       'Не удалось скопировать. Удерживайте ссылку.'],
+    ar: ['افتح في Safari',            'للحصول على أفضل تجربة، انسخ الرابط وافتحه في Safari.',                                            '📋 نسخ الرابط',             '✅ تم النسخ. افتح Safari والصق الرابط.',                   'فشل النسخ. اضغط مطولاً على الرابط.'],
+    ur: ['Safari میں کھولیں',         'بہترین تجربے کے لیے لنک کاپی کریں اور Safari میں کھولیں۔',                                        '📋 لنک کاپی کریں',          '✅ کاپی ہو گیا۔ Safari کھولیں اور پیسٹ کریں۔',             'کاپی ناکام۔ لنک کو دیر تک دبائیں۔'],
+    vi: ['Mở bằng Safari',            'Để có trải nghiệm tốt nhất, hãy sao chép liên kết và mở trong Safari.',                           '📋 Sao chép liên kết',     '✅ Đã sao chép. Mở Safari và dán liên kết.',              'Sao chép thất bại. Nhấn giữ liên kết để sao chép.'],
+    hi: ['Safari में खोलें',            'बेहतर अनुभव के लिए लिंक कॉपी करें और Safari में खोलें।',                                          '📋 लिंक कॉपी करें',         '✅ कॉपी हो गया। Safari खोलें और पेस्ट करें।',              'कॉपी विफल। लिंक को देर तक दबाएँ।'],
+    th: ['เปิดด้วย Safari',           'เพื่อประสบการณ์ที่ดีที่สุด คัดลอกลิงก์และเปิดใน Safari',                                            '📋 คัดลอกลิงก์',            '✅ คัดลอกแล้ว เปิด Safari แล้ววางลิงก์',                    'คัดลอกไม่สำเร็จ กดลิงก์ค้างเพื่อคัดลอก'],
+    id: ['Buka dengan Safari',        'Untuk pengalaman terbaik, salin tautan dan buka di Safari.',                                     '📋 Salin tautan',          '✅ Tersalin. Buka Safari dan tempel tautan.',              'Gagal menyalin. Tekan lama tautan di atas.'],
   };
 
   /* 初始化语言：URL > localStorage > window.__DDX_LANG > 系统 */
@@ -65,6 +66,18 @@
     Object.entries(vars).reduce((s, [k, v]) => s.replaceAll(`{${k}}`, v),
       (LANG[currentLang]?.[key] || LANG.en[key] || key));
 
+  function applyGateText() {
+    const g = GATE[currentLang] || GATE.en;
+    const t1 = document.getElementById('browserTitle');
+    const t2 = document.getElementById('browserText');
+    const t3 = document.getElementById('copyForSafari');
+    const u  = document.getElementById('noticeUrl');
+    if (t1) t1.textContent = g[0];
+    if (t2) t2.textContent = g[1];
+    if (t3) t3.textContent = g[2];
+    if (u)  u.textContent  = location.href;
+  }
+
   function applyLang(code) {
     const c = String(code || 'en').toLowerCase();
     currentLang = pickLang(c);
@@ -77,11 +90,7 @@
       el.textContent = LANG[currentLang]?.[el.dataset.i18n] || LANG.en[el.dataset.i18n] || el.dataset.i18n;
     });
 
-    const gateText = GATE[currentLang] || GATE.en;
-    document.getElementById('browserTitle').textContent   = gateText[0];
-    document.getElementById('browserText').textContent    = gateText[1];
-    document.getElementById('copyForSafari').textContent  = gateText[2];
-    document.getElementById('continueHere').textContent   = gateText[3];
+    applyGateText();
 
     const lvEl = document.getElementById('level');
     if (lvEl && typeof S !== 'undefined' && S) lvEl.textContent = (LANG[currentLang]?.level || LANG.en.level).replace('{n}', S.level);
@@ -89,8 +98,6 @@
     if (btn && btn.dataset.i18n) btn.textContent = LANG[currentLang]?.[btn.dataset.i18n] || LANG.en[btn.dataset.i18n];
   }
   window.__DDX_applyLang = applyLang;
-
-  /* ⚠️ 关键修复：首屏 applyLang 移到 S 定义之后执行，避免引用未初始化的 const S */
 
   /* ============ 状态 ============ */
   const S = {
@@ -103,7 +110,7 @@
   const board = $('#board');
   const trayEl = $('#tray');
 
-  /* ⭐ S 已定义，现在可以安全执行首屏语言渲染 */
+  /* S 已定义，执行首屏语言渲染 */
   applyLang(rawLang);
 
   let _ac = null;
@@ -279,7 +286,7 @@
     t.textContent = msg;
     t.classList.add('show');
     clearTimeout(buzz.timer);
-    buzz.timer = setTimeout(() => t.classList.remove('show'), 1200);
+    buzz.timer = setTimeout(() => t.classList.remove('show'), 1600);
   }
 
   function tone(freq) {
@@ -307,21 +314,54 @@
     }
   }
 
+  /* ============ iOS 非 Safari 引导 ============ */
   const ua = navigator.userAgent;
-  const isIPhone = /iPhone|iPod/i.test(ua);
-  const isSafari = /Safari/i.test(ua) && !/(CriOS|FxiOS|EdgiOS|OPiOS|DuckDuckGo|GSA|MicroMessenger|FBAN|FBAV|Instagram|Line|TikTok)/i.test(ua);
-  if (isIPhone && !isSafari && !sessionStorage.getItem('browser-notice-dismissed'))
-    $('#browserNotice').classList.remove('hidden');
+  const isIOS = /iPhone|iPad|iPod/i.test(ua);
+  const isSafari = /Safari/i.test(ua)
+    && !/(CriOS|FxiOS|EdgiOS|OPiOS|DuckDuckGo|GSA|MicroMessenger|FBAN|FBAV|Instagram|Line|TikTok|Twitter|LinkedIn|Baidu|Sogou|Quark|UCBrowser)/i.test(ua);
 
-  $('#continueHere').onclick = () => {
-    (navigator.clipboard?.writeText(location.href) || Promise.resolve()).catch(() => {});
-    sessionStorage.setItem('browser-notice-dismissed', '1');
-    $('#browserNotice').classList.add('hidden');
-    if (navigator.share) navigator.share({ title: tr('name'), text: tr('shareText'), url: location.href }).catch(() => {});
-  };
+  if (isIOS && !isSafari && !sessionStorage.getItem('browser-notice-dismissed')) {
+    const box = $('#browserNotice');
+    if (box) {
+      box.classList.remove('hidden');
+      const u = document.getElementById('noticeUrl');
+      if (u) u.textContent = location.href;
+      applyGateText();
+    }
+  }
+
+  /* 复制完整链接（含所有参数），复制成功后自动关闭弹窗 */
   $('#copyForSafari').onclick = async () => {
-    try { await navigator.clipboard.writeText(location.href); buzz(tr('copied')); }
-    catch (e) {}
+    const url = location.href;   // 完整 URL，包含 ?lang=xxx 等所有参数
+    let ok = false;
+    try {
+      if (navigator.clipboard && window.isSecureContext) {
+        await navigator.clipboard.writeText(url);
+        ok = true;
+      }
+    } catch (e) {}
+    if (!ok) {
+      try {
+        const ta = document.createElement('textarea');
+        ta.value = url;
+        ta.style.cssText = 'position:fixed;left:-9999px;top:0';
+        document.body.appendChild(ta);
+        ta.select();
+        ta.setSelectionRange(0, ta.value.length);
+        document.execCommand('copy');
+        document.body.removeChild(ta);
+        ok = true;
+      } catch (e) {}
+    }
+    const g = GATE[currentLang] || GATE.en;
+    buzz(ok ? g[3] : g[4]);
+    if (ok) {
+      // 1.5 秒后自动关闭弹窗
+      setTimeout(() => {
+        $('#browserNotice').classList.add('hidden');
+        sessionStorage.setItem('browser-notice-dismissed', '1');
+      }, 1500);
+    }
   };
 
   $('#share').onclick = shareGame;
