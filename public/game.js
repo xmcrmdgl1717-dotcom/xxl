@@ -25,7 +25,7 @@
     id:{name:'Trio Ubin',subtitle:'Pilih paling atas · Cocokkan 3',currentLevel:'Level',remaining:'Tersisa',gameTime:'Waktu',tray:'Baki',undo:'Urungkan',shuffle:'Acak',rescue:'Keluarkan',once:'Sisa 1 kali',ready:'Siap?',intro:'Pilih ubin yang terbuka dan cocokkan tiga. Baki penuh berarti kalah.',start:'Mulai',share:'Bagikan',level:'Level {n}',win:'Level {n} selesai!',warm:'Pemanasan selesai. Level 2 punya lebih banyak lapisan dan simbol.',streak:'Kamu menyelesaikan {n} level dalam {t}. Berikutnya lebih sulit.',fail:'Baki penuh',failText:'Hampir! Dahulukan simbol yang sudah terkumpul dua.',next:'Level berikutnya',retry:'Coba lagi',blocked:'Ubin ini masih tertutup',match:'{x} × 3 dihapus',restart:'Mulai ulang level ini?',soundOn:'Suara aktif',soundOff:'Suara mati',undone:'Langkah dibatalkan',shuffled:'Ubin diacak',moved:'{n} ubin dikeluarkan',shareText:'Bisakah kamu mengalahkan waktuku di Trio Ubin?',copied:'Tautan disalin'}
   };
 
-  /* iOS 非 Safari 引导弹窗文案（16 种语言） */
+  /* 弹窗文案（16 种语言）：[标题, 正文, 复制按钮, 复制成功提示, 复制失败提示] */
   const GATE = {
     en: ['Use Safari to open',        'For the best experience, copy the link below and open it in Safari.',                        '📋 Copy link',           '✅ Link copied. Open Safari and paste to visit.',        'Copy failed. Long-press the link above to copy manually.'],
     zh: ['请用 Safari 打开',           '为了获得最佳游戏体验，请复制下方链接，打开 Safari 后粘贴访问。',                                 '📋 复制链接',              '✅ 已复制，请打开 Safari 粘贴访问',                       '复制失败，请长按上方链接手动复制'],
@@ -45,10 +45,16 @@
     id: ['Buka dengan Safari',        'Untuk pengalaman terbaik, salin tautan dan buka di Safari.',                                     '📋 Salin tautan',          '✅ Tersalin. Buka Safari dan tempel tautan.',              'Gagal menyalin. Tekan lama tautan di atas.'],
   };
 
-  /* 初始化语言：URL > localStorage > window.__DDX_LANG > 系统 */
+  /* ============ 安全存取（隐私模式不崩） ============ */
+  function safeGet(k){ try{return localStorage.getItem(k)}catch(e){return null} }
+  function safeSet(k,v){ try{localStorage.setItem(k,v)}catch(e){} }
+  function safeSGet(k){ try{return sessionStorage.getItem(k)}catch(e){return null} }
+  function safeSSet(k,v){ try{sessionStorage.setItem(k,v)}catch(e){} }
+
+  /* ============ 语言初始化 ============ */
   const rawLang = (
     new URLSearchParams(location.search).get('lang') ||
-    localStorage.getItem('ddx-lang') ||
+    safeGet('ddx-lang') ||
     window.__DDX_LANG ||
     navigator.languages?.[0] || navigator.language || 'en'
   ).toLowerCase();
@@ -66,6 +72,7 @@
     Object.entries(vars).reduce((s, [k, v]) => s.replaceAll(`{${k}}`, v),
       (LANG[currentLang]?.[key] || LANG.en[key] || key));
 
+  /* 每个元素都判空，绝不再因 null 崩溃 */
   function applyGateText() {
     const g = GATE[currentLang] || GATE.en;
     const t1 = document.getElementById('browserTitle');
@@ -110,7 +117,7 @@
   const board = $('#board');
   const trayEl = $('#tray');
 
-  /* S 已定义，执行首屏语言渲染 */
+  /* S 已定义，可以安全执行首屏语言渲染 */
   applyLang(rawLang);
 
   let _ac = null;
@@ -160,6 +167,7 @@
   }
 
   function render() {
+    if (!board) return;
     board.innerHTML = '';
     const w = board.clientWidth, h = board.clientHeight || 400;
     const scale = Math.min(1, (w - 12) / 520, (h - 12) / 382);
@@ -177,20 +185,22 @@
       board.appendChild(b);
     });
 
-    trayEl.innerHTML = '';
-    for (let i = 0; i < 7; i++) {
-      const d = document.createElement('div');
-      d.className = 'slot' + (S.tray[i] ? ' filled' : '');
-      d.textContent = S.tray[i]?.icon || '';
-      trayEl.appendChild(d);
+    if (trayEl) {
+      trayEl.innerHTML = '';
+      for (let i = 0; i < 7; i++) {
+        const d = document.createElement('div');
+        d.className = 'slot' + (S.tray[i] ? ' filled' : '');
+        d.textContent = S.tray[i]?.icon || '';
+        trayEl.appendChild(d);
+      }
     }
 
-    $('#level').textContent = tr('level', { n: S.level });
-    $('#remain').textContent = S.tiles.filter(t => !t.removed).length;
-    $('#trayCount').textContent = `${S.tray.length} / 7`;
-    $('#undo').disabled    = S.used.undo || !S.history.length;
-    $('#shuffle').disabled = S.used.shuffle;
-    $('#rescue').disabled  = S.used.rescue || !S.tray.length;
+    const lvEl = $('#level');       if (lvEl) lvEl.textContent = tr('level', { n: S.level });
+    const rmEl = $('#remain');      if (rmEl) rmEl.textContent = S.tiles.filter(t => !t.removed).length;
+    const tcEl = $('#trayCount');   if (tcEl) tcEl.textContent = `${S.tray.length} / 7`;
+    const uEl  = $('#undo');        if (uEl)  uEl.disabled = S.used.undo || !S.history.length;
+    const sEl  = $('#shuffle');     if (sEl)  sEl.disabled = S.used.shuffle;
+    const rEl  = $('#rescue');      if (rEl)  rEl.disabled = S.used.rescue || !S.tray.length;
   }
 
   function pick(id) {
@@ -213,7 +223,7 @@
       const removing = S.tray.filter(x => x.icon === hit).slice(0, 3);
       const removeIds = removing.map(x => x.source);
       removeIds.forEach(id => {
-        const el = board.querySelector(`.tile[data-id="${id}"]`);
+        const el = board && board.querySelector(`.tile[data-id="${id}"]`);
         if (el) el.classList.add('removing');
       });
       setTimeout(() => {
@@ -235,8 +245,8 @@
 
   function checkEnd() {
     if (!S.tiles.some(t => !t.removed)) {
-      const best = Math.max(+localStorage.getItem('ddx-best') || 0, S.combo);
-      localStorage.setItem('ddx-best', best);
+      const best = Math.max(+safeGet('ddx-best') || 0, S.combo);
+      safeSet('ddx-best', best);
       finish(true);
     } else if (S.tray.length >= 7) {
       finish(false);
@@ -246,13 +256,13 @@
   function finish(win) {
     S.playing = false;
     S.nextLevel = win;
-    $('#modalHero').textContent = win ? '🎉' : '😵';
-    $('#modalTitle').textContent = win ? tr('win', { n: S.level }) : tr('fail');
-    $('#modalText').textContent = win
+    const hero  = $('#modalHero');   if (hero)  hero.textContent = win ? '🎉' : '😵';
+    const title = $('#modalTitle');  if (title) title.textContent = win ? tr('win', { n: S.level }) : tr('fail');
+    const text  = $('#modalText');   if (text)  text.textContent = win
       ? (S.level === 1 ? tr('warm') : tr('streak', { n: S.level, t: formatTime(S.activeSeconds) }))
       : tr('failText');
-    $('#modalBtn').textContent = win ? tr('next') : tr('retry');
-    $('#modal').classList.remove('hidden');
+    const btn   = $('#modalBtn');    if (btn)   btn.textContent = win ? tr('next') : tr('retry');
+    const modal = $('#modal');       if (modal) modal.classList.remove('hidden');
     if (window.DDX_TRACK) {
       window.DDX_TRACK.onLevel(S.level, win ? S.level : S.level - 1, S.activeSeconds);
     }
@@ -267,7 +277,7 @@
     S.combo = 0;
     S.playing = true;
     S.nextLevel = false;
-    $('#modal').classList.add('hidden');
+    const modal = $('#modal'); if (modal) modal.classList.add('hidden');
     render();
   }
 
@@ -278,11 +288,12 @@
   setInterval(() => {
     if (!S.playing) return;
     S.activeSeconds++;
-    $('#timer').textContent = formatTime(S.activeSeconds);
+    const el = $('#timer'); if (el) el.textContent = formatTime(S.activeSeconds);
   }, 1000);
 
   function buzz(msg) {
     const t = $('#toast');
+    if (!t) return;
     t.textContent = msg;
     t.classList.add('show');
     clearTimeout(buzz.timer);
@@ -306,21 +317,35 @@
     const data = { title: tr('name'), text: tr('shareText'), url: location.href };
     try {
       if (navigator.share) await navigator.share(data);
-      else { await navigator.clipboard.writeText(location.href); buzz(tr('copied')); }
+      else if (navigator.clipboard) { await navigator.clipboard.writeText(location.href); buzz(tr('copied')); }
     } catch (e) {
       if (e.name !== 'AbortError') {
-        try { await navigator.clipboard.writeText(location.href); buzz(tr('copied')); } catch (_) {}
+        try { if (navigator.clipboard) await navigator.clipboard.writeText(location.href); buzz(tr('copied')); } catch (_) {}
       }
     }
   }
 
-  /* ============ iOS 非 Safari 引导 ============ */
-  const ua = navigator.userAgent;
-  const isIOS = /iPhone|iPad|iPod/i.test(ua);
-  const isSafari = /Safari/i.test(ua)
-    && !/(CriOS|FxiOS|EdgiOS|OPiOS|DuckDuckGo|GSA|MicroMessenger|FBAN|FBAV|Instagram|Line|TikTok|Twitter|LinkedIn|Baidu|Sogou|Quark|UCBrowser)/i.test(ua);
+  /* ============ Apple 设备（iPhone / iPad / Mac）非 Safari 引导 ============ */
+  function detectAppleNonSafari() {
+    const ua = navigator.userAgent || '';
+    const maxTP = navigator.maxTouchPoints || 0;
 
-  if (isIOS && !isSafari && !sessionStorage.getItem('browser-notice-dismissed')) {
+    // iPadOS 13+ 会伪装成 Mac，用触摸点数区分 iPad 和真 Mac
+    const isIPad   = /iPad/i.test(ua) || (/Macintosh/i.test(ua) && maxTP > 1);
+    const isMac    = /Macintosh/i.test(ua) && maxTP <= 1;
+    const isIPhone = /iPhone|iPod/i.test(ua);
+    const isAppleDevice = isIPad || isMac || isIPhone;
+    if (!isAppleDevice) return false;
+
+    // Safari 判定：含 Safari 且不含其他浏览器标识
+    const isSafari = /Safari/i.test(ua) &&
+      !/(CriOS|FxiOS|EdgiOS|OPiOS|DuckDuckGo|GSA|MicroMessenger|FBAN|FBAV|Instagram|Line|TikTok|Twitter|LinkedIn|Baidu|Sogou|Quark|UCBrowser|Chrome|Chromium|Firefox|Edg\/)/i.test(ua);
+
+    return !isSafari;
+  }
+
+  /* ⭐ 改动 1：每次都弹，不再判断"已忽略" */
+  if (detectAppleNonSafari()) {
     const box = $('#browserNotice');
     if (box) {
       box.classList.remove('hidden');
@@ -330,93 +355,118 @@
     }
   }
 
-  /* 复制完整链接（含所有参数），复制成功后自动关闭弹窗 */
-  $('#copyForSafari').onclick = async () => {
-    const url = location.href;   // 完整 URL，包含 ?lang=xxx 等所有参数
-    let ok = false;
-    try {
-      if (navigator.clipboard && window.isSecureContext) {
-        await navigator.clipboard.writeText(url);
-        ok = true;
-      }
-    } catch (e) {}
-    if (!ok) {
+  /* 复制完整链接（含所有参数） */
+  const copyBtn = $('#copyForSafari');
+  if (copyBtn) {
+    copyBtn.onclick = async () => {
+      const url = location.href;
+      let ok = false;
       try {
-        const ta = document.createElement('textarea');
-        ta.value = url;
-        ta.style.cssText = 'position:fixed;left:-9999px;top:0';
-        document.body.appendChild(ta);
-        ta.select();
-        ta.setSelectionRange(0, ta.value.length);
-        document.execCommand('copy');
-        document.body.removeChild(ta);
-        ok = true;
+        if (navigator.clipboard && window.isSecureContext) {
+          await navigator.clipboard.writeText(url);
+          ok = true;
+        }
       } catch (e) {}
-    }
-    const g = GATE[currentLang] || GATE.en;
-    buzz(ok ? g[3] : g[4]);
-    if (ok) {
-      // 1.5 秒后自动关闭弹窗
-      setTimeout(() => {
-        $('#browserNotice').classList.add('hidden');
-        sessionStorage.setItem('browser-notice-dismissed', '1');
-      }, 1500);
-    }
-  };
+      if (!ok) {
+        try {
+          const ta = document.createElement('textarea');
+          ta.value = url;
+          ta.style.cssText = 'position:fixed;left:-9999px;top:0';
+          document.body.appendChild(ta);
+          ta.select();
+          ta.setSelectionRange(0, ta.value.length);
+          document.execCommand('copy');
+          document.body.removeChild(ta);
+          ok = true;
+        } catch (e) {}
+      }
+      const g = GATE[currentLang] || GATE.en;
+      buzz(ok ? g[3] : g[4]);
+      /* ⭐ 改动 2：不关闭弹窗 —— 用户必须切到 Safari 才能玩 */
+    };
+  }
 
-  $('#share').onclick = shareGame;
-  $('#modalShare').onclick = shareGame;
-  $('#modalBtn').onclick = () => {
-    if (S.nextLevel) start(S.level + 1);
-    else { S.activeSeconds = 0; $('#timer').textContent = '00:00'; start(S.level); }
-  };
-  $('#restart').onclick = () => {
-    if (confirm(tr('restart'))) {
-      S.activeSeconds = 0;
-      $('#timer').textContent = '00:00';
-      start(S.level);
-    }
-  };
-  $('#sound').onclick = () => {
-    S.sound = !S.sound;
-    $('#sound').textContent = S.sound ? '🔊' : '🔇';
-    buzz(tr(S.sound ? 'soundOn' : 'soundOff'));
-  };
-  $('#undo').onclick = () => {
-    if (S.used.undo || !S.history.length) return;
-    const h = S.history.pop();
-    S.tiles.find(t => t.id === h.id).removed = false;
-    S.tray = h.tray;
-    S.combo = h.combo;
-    S.used.undo = true;
-    buzz(tr('undone'));
-    render();
-  };
-  $('#shuffle').onclick = () => {
-    if (S.used.shuffle) return;
-    const active = S.tiles.filter(t => !t.removed);
-    const vals = active.map(t => t.icon).sort(() => Math.random() - .5);
-    active.forEach((t, i) => t.icon = vals[i]);
-    S.used.shuffle = true;
-    buzz(tr('shuffled'));
-    render();
-  };
-  $('#rescue').onclick = () => {
-    if (S.used.rescue || !S.tray.length) return;
-    const out = S.tray.splice(0, Math.min(3, S.tray.length));
-    out.forEach(x => {
-      const t = S.tiles.find(t => t.id === x.source);
-      if (t) t.removed = false;
-    });
-    S.history = S.history.filter(h => !out.some(o => o.source === h.id));
-    S.used.rescue = true;
-    buzz(tr('moved', { n: out.length }));
-    render();
-  };
+  /* ============ 事件绑定（全部判空） ============ */
+  const shareBtn = $('#share');
+  if (shareBtn) shareBtn.onclick = shareGame;
+
+  const modalShareBtn = $('#modalShare');
+  if (modalShareBtn) modalShareBtn.onclick = shareGame;
+
+  const modalBtn = $('#modalBtn');
+  if (modalBtn) {
+    modalBtn.onclick = () => {
+      if (S.nextLevel) start(S.level + 1);
+      else { S.activeSeconds = 0; const t = $('#timer'); if (t) t.textContent = '00:00'; start(S.level); }
+    };
+  }
+
+  const restartBtn = $('#restart');
+  if (restartBtn) {
+    restartBtn.onclick = () => {
+      if (confirm(tr('restart'))) {
+        S.activeSeconds = 0;
+        const t = $('#timer'); if (t) t.textContent = '00:00';
+        start(S.level);
+      }
+    };
+  }
+
+  const soundBtn = $('#sound');
+  if (soundBtn) {
+    soundBtn.onclick = () => {
+      S.sound = !S.sound;
+      soundBtn.textContent = S.sound ? '🔊' : '🔇';
+      buzz(tr(S.sound ? 'soundOn' : 'soundOff'));
+    };
+  }
+
+  const undoBtn = $('#undo');
+  if (undoBtn) {
+    undoBtn.onclick = () => {
+      if (S.used.undo || !S.history.length) return;
+      const h = S.history.pop();
+      S.tiles.find(t => t.id === h.id).removed = false;
+      S.tray = h.tray;
+      S.combo = h.combo;
+      S.used.undo = true;
+      buzz(tr('undone'));
+      render();
+    };
+  }
+
+  const shuffleBtn = $('#shuffle');
+  if (shuffleBtn) {
+    shuffleBtn.onclick = () => {
+      if (S.used.shuffle) return;
+      const active = S.tiles.filter(t => !t.removed);
+      const vals = active.map(t => t.icon).sort(() => Math.random() - .5);
+      active.forEach((t, i) => t.icon = vals[i]);
+      S.used.shuffle = true;
+      buzz(tr('shuffled'));
+      render();
+    };
+  }
+
+  const rescueBtn = $('#rescue');
+  if (rescueBtn) {
+    rescueBtn.onclick = () => {
+      if (S.used.rescue || !S.tray.length) return;
+      const out = S.tray.splice(0, Math.min(3, S.tray.length));
+      out.forEach(x => {
+        const t = S.tiles.find(t => t.id === x.source);
+        if (t) t.removed = false;
+      });
+      S.history = S.history.filter(h => !out.some(o => o.source === h.id));
+      S.used.rescue = true;
+      buzz(tr('moved', { n: out.length }));
+      render();
+    };
+  }
 
   window.addEventListener('resize', fit);
   window.addEventListener('orientationchange', () => setTimeout(fit, 180));
-  if ('ResizeObserver' in window) new ResizeObserver(fit).observe(board);
+  if ('ResizeObserver' in window && board) new ResizeObserver(fit).observe(board);
 
   window.__DDX_getLevel = () => S.level;
   window.__DDX_getPlaySeconds = () => S.activeSeconds;
@@ -460,8 +510,13 @@
     DE:'de',AT:'de', KR:'ko', VN:'vi', TR:'tr', TH:'th',
   };
 
+  function safeGet(k){ try{return localStorage.getItem(k)}catch(e){return null} }
+  function safeSet(k,v){ try{localStorage.setItem(k,v)}catch(e){} }
+  function safeSGet(k){ try{return sessionStorage.getItem(k)}catch(e){return null} }
+  function safeSSet(k,v){ try{sessionStorage.setItem(k,v)}catch(e){} }
+
   const urlLang = new URLSearchParams(location.search).get('lang');
-  const saved   = localStorage.getItem('ddx-lang');
+  const saved   = safeGet('ddx-lang');
   const device  = (navigator.languages?.[0] || navigator.language || 'en').toLowerCase();
 
   function deviceToCode(l) {
@@ -501,10 +556,10 @@
   }
 
   const SESSION_KEY = 'ddx-session-id';
-  let sessionId = sessionStorage.getItem(SESSION_KEY);
+  let sessionId = safeSGet(SESSION_KEY);
   if (!sessionId) {
     sessionId = 's_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2, 8);
-    sessionStorage.setItem(SESSION_KEY, sessionId);
+    safeSSet(SESSION_KEY, sessionId);
   }
 
   let visibleSeconds = 0;
@@ -591,7 +646,7 @@
   function openLangPicker() {
     const cur = window.__DDX_LANG || 'en';
     const ov = document.createElement('div');
-    ov.style.cssText = 'position:fixed;inset:0;background:#0008;z-index:200;display:grid;place-items:end center';
+    ov.style.cssText = 'position:fixed;inset:0;background:#0008;z-index:300;display:grid;place-items:end center';
     const box = document.createElement('div');
     box.style.cssText = 'width:min(520px,100%);max-height:70vh;overflow:auto;background:#fff7dc;border-radius:20px 20px 0 0;padding:16px';
     box.innerHTML = '<div style="font-weight:800;margin-bottom:10px">🌐 选择语言 / Language</div>' +
@@ -601,11 +656,13 @@
     ov.onclick = (e) => { if (e.target === ov) ov.remove(); };
     box.querySelectorAll('button[data-code]').forEach(b => b.onclick = () => {
       const code = b.dataset.code;
-      localStorage.setItem('ddx-lang', code);
+      safeSet('ddx-lang', code);
       window.DDX_TRACK.onLang(code);
       if (typeof window.__DDX_applyLang === 'function') window.__DDX_applyLang(code);
       ov.remove();
     });
   }
-  document.getElementById('langBtn').onclick = openLangPicker;
+
+  const langBtn = document.getElementById('langBtn');
+  if (langBtn) langBtn.onclick = openLangPicker;
 })();
